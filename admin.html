@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Administrativo - ZUARSE</title>
+    <link rel="stylesheet" href="admin-style.css">
+</head>
+<body>
+    <script>
+        // Verificar sesión de admin antes de cargar
+        const sesion = JSON.parse(localStorage.getItem('sesion_zuarse'));
+        if (!sesion || sesion.tipo !== 'admin') {
+            window.location.href = 'login.html';
+        }
+    </script>
+    <div class="admin-container">
+        <header class="admin-header">
+            <div class="header-content">
+                <h1>Panel Administrativo</h1>
+                <div class="header-actions">
+                    <a href="index.html" class="btn-volver">Volver a Tienda</a>
+                    <button onclick="cerrarSesionAdmin()" class="btn-logout">Cerrar Sesión</button>
+                </div>
+            </div>
+        </header>
+
+        <div class="admin-content">
+            <!-- NAVEGACIÓN DE PESTAÑAS -->
+            <nav class="tabs-nav">
+                <button class="tab-btn active" data-tab="productos">Productos</button>
+                <button class="tab-btn" data-tab="categorias">Categorías</button>
+                <button class="tab-btn" data-tab="clientes">Clientes</button>
+                <button class="tab-btn" data-tab="proveedores">Proveedores</button>
+                <button class="tab-btn" data-tab="compras">Compras</button>
+                <button class="tab-btn" data-tab="pedidos">Pedidos</button>
+                <button class="tab-btn" data-tab="notificaciones">Notificaciones</button>
+                <button class="tab-btn" data-tab="reportes">Reportes</button>
+            </nav>
+
+            <!-- TAB: PRODUCTOS -->
+            <section id="productos" class="tab-content active">
+                <div class="tab-header">
+                    <h2>Gestionar Productos</h2>
+                    <button class="btn-agregar" id="btn-nuevo-producto">+ Nuevo Producto</button>
+                </div>
+
+                <div class="form-container" id="form-producto" style="display: none;">
+                    <h3>Formulario de Producto</h3>
+                    <form id="formulario-producto">
+                        <div class="form-group">
+                            <label for="prod-nombre">Nombre del Producto:</label>
+                            <input type="text" id="prod-nombre" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="prod-descripcion">Descripción:</label>
+                            <textarea id="prod-descripcion" rows="3"></textarea>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="prod-precio">Precio:</label>
+                                <input type="number" id="prod-precio" step="0.01" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="prod-imagen">URL de Imagen:</label>
+                                <input type="text" id="prod-imagen" placeholder="ej: images/producto.png">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="prod-stock">Stock:</label>
+                                <input type="number" id="prod-stock" value="10">
+                            </div>
+                            <div class="form-group">
+                                <label for="prod-categoria">Categoría:</label>
+                                <select id="prod-categoria">
+                                    <option value="">-- Selecciona categoría --</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn-guardar">Guardar Producto</button>
+                            <button type="button" class="btn-cancelar" id="cancelar-producto">Cancelar</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="lista-container">
+                    <table id="tabla-productos">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nombre</th>
+                                <th>Precio</th>
+                                <th>Stock</th>
+                                <th>Categoría</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-productos">
+                            <!-- Se llena dinámicamente -->
+                        </tbody>
+                    </table>
+                    <div id="sin-productos" class="empty-state">
+                        No hay productos aún. ¡Crea uno nuevo!
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB: CATEGORÍAS -->
+            <section id="categorias" class="tab-content">
+                <div class="tab-header">
+                    <h2>Gestionar Categorías</h2>
+                    <button class="btn-agregar" id="btn-nueva-categoria">+ Nueva Categoría</button>
+                </div>
+
+                <div class="form-container" id="form-categoria" style="display: none;">
+                    <h3>Formulario de Categoría</h3>
+                    <form id="formulario-categoria">
+                        <div class="form-group">
+                            <label for="cat-nombre">Nombre de la Categoría:</label>
+                            <input type="text" id="cat-nombre" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="cat-descripcion">Descripción (opcional):</label>
+                            <textarea id="cat-descripcion" rows="2"></textarea>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn-guardar">Guardar Categoría</button>
+                            <button type="button" class="btn-cancelar" id="cancelar-categoria">Cancelar</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="lista-container">
+                    <table id="tabla-categorias">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nombre</th>
+                                <th>Descripción</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-categorias">
+                            <!-- Se llena dinámicamente -->
+                        </tbody>
+                    </table>
+                    <div id="sin-categorias" class="empty-state">
+                        No hay categorías aún. ¡Crea una nueva!
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB: CLIENTES -->
+            <section id="clientes" class="tab-content">
+                <div class="tab-header">
+                    <h2>Gestionar Clientes</h2>
+                    <button class="btn-agregar" id="btn-nuevo-cliente">+ Nuevo Cliente</button>
+                </div>
+
+                <div class="form-container" id="form-cliente" style="display: none;">
+                    <h3>Formulario de Cliente</h3>
+                    <form id="formulario-cliente">
+                        <div class="form-group">
+                            <label for="cli-nombre">Nombre:</label>
+                            <input type="text" id="cli-nombre" required>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="cli-email">Email:</label>
+                                <input type="email" id="cli-email" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="cli-telefono">Teléfono:</label>
+                                <input type="tel" id="cli-telefono">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="cli-direccion">Dirección:</label>
+                            <textarea id="cli-direccion" rows="2"></textarea>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="cli-ciudad">Ciudad:</label>
+                                <input type="text" id="cli-ciudad">
+                            </div>
+                            <div class="form-group">
+                                <label for="cli-estado">Estado:</label>
+                                <select id="cli-estado">
+                                    <option value="activo">Activo</option>
+                                    <option value="inactivo">Inactivo</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn-guardar">Guardar Cliente</button>
+                            <button type="button" class="btn-cancelar" id="cancelar-cliente">Cancelar</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="lista-container">
+                    <table id="tabla-clientes">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nombre</th>
+                                <th>Email</th>
+                                <th>Teléfono</th>
+                                <th>Ciudad</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-clientes">
+                            <!-- Se llena dinámicamente -->
+                        </tbody>
+                    </table>
+                    <div id="sin-clientes" class="empty-state">
+                        No hay clientes aún. ¡Agrega uno nuevo!
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB: PROVEEDORES -->
+            <section id="proveedores" class="tab-content">
+                <div class="tab-header">
+                    <h2>Gestionar Proveedores</h2>
+                    <button class="btn-agregar" id="btn-nuevo-proveedor">+ Nuevo Proveedor</button>
+                </div>
+
+                <div class="form-container" id="form-proveedor" style="display: none;">
+                    <h3>Formulario de Proveedor</h3>
+                    <form id="formulario-proveedor">
+                        <div class="form-group">
+                            <label for="prov-nombre">Nombre del Proveedor:</label>
+                            <input type="text" id="prov-nombre" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="prov-direccion">Dirección:</label>
+                            <textarea id="prov-direccion" rows="2"></textarea>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="prov-telefono">Teléfono:</label>
+                                <input type="tel" id="prov-telefono" placeholder="ej: +1 234 567 8900">
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn-guardar">Guardar Proveedor</button>
+                            <button type="button" class="btn-cancelar" id="cancelar-proveedor">Cancelar</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="filtros-container">
+                    <input type="text" id="filtro-proveedor" placeholder="Buscar proveedor..." class="filtro-input">
+                </div>
+
+                <div class="lista-container">
+                    <table id="tabla-proveedores">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Proveedor</th>
+                                <th>Dirección</th>
+                                <th>Teléfono</th>
+                                <th>Fecha Registro</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-proveedores">
+                            <!-- Se llena dinámicamente -->
+                        </tbody>
+                    </table>
+                    <div id="sin-proveedores" class="empty-state">
+                        No hay proveedores aún. ¡Crea uno nuevo!
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB: COMPRAS -->
+            <section id="compras" class="tab-content">
+                <div class="tab-header">
+                    <h2>Gestionar Compras</h2>
+                    <button class="btn-agregar" id="btn-nueva-compra">+ Nueva Compra</button>
+                </div>
+
+                <div class="form-container" id="form-compra" style="display: none;">
+                    <h3>Registrar Compra</h3>
+                    <form id="formulario-compra">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="compra-proveedor">Proveedor:</label>
+                                <select id="compra-proveedor" required>
+                                    <option value="">-- Selecciona proveedor --</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="compra-id-factura">ID Factura:</label>
+                                <input type="text" id="compra-id-factura" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="compra-fecha">Fecha:</label>
+                                <input type="date" id="compra-fecha" required>
+                            </div>
+                        </div>
+
+                        <fieldset class="form-fieldset">
+                            <legend>Detalle de Productos</legend>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="compra-categoria-select">Categoría:</label>
+                                    <select id="compra-categoria-select">
+                                        <option value="">-- Todas --</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="compra-producto-select">Producto:</label>
+                                    <select id="compra-producto-select">
+                                        <option value="">-- Selecciona --</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="compra-item-cantidad">Cantidad:</label>
+                                    <input type="number" id="compra-item-cantidad" min="1" value="1">
+                                </div>
+                                <div class="form-group">
+                                    <label for="compra-item-precio">Precio Unitario ($):</label>
+                                    <input type="number" id="compra-item-precio" step="0.01" min="0" placeholder="0.00">
+                                </div>
+                                <div class="form-group" style="align-self: flex-end;">
+                                    <button type="button" id="btn-add-prod-compra" class="btn-agregar" style="width: 100%;">+ Agregar</button>
+                                </div>
+                            </div>
+                        </fieldset>
+
+                        <div class="form-group">
+                            <label for="compra-productos">Listado de Productos (agregados):</label>
+                            <textarea id="compra-productos" rows="4" placeholder="Los productos agregados aparecerán aquí..." required readonly></textarea>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="compra-total">Total Compra ($):</label>
+                                <input type="number" id="compra-total" step="0.01" min="0" required readonly>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn-guardar">Guardar Compra</button>
+                            <button type="button" class="btn-cancelar" id="cancelar-compra">Cancelar</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="filtros-container">
+                    <h3>Historial de Compras</h3>
+                    <input type="text" id="filtro-compra-proveedor" placeholder="Buscar por proveedor..." class="filtro-input">
+                </div>
+
+                <div class="lista-container">
+                    <table id="tabla-compras">
+                        <thead>
+                            <tr>
+                                <th>ID Factura</th>
+                                <th>Proveedor</th>
+                                <th>Fecha</th>
+                                <th>Productos</th>
+                                <th>Total</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-compras">
+                            <!-- Se llena dinámicamente -->
+                        </tbody>
+                    </table>
+                    <div id="sin-compras" class="empty-state">
+                        No hay compras registradas.
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB: PEDIDOS -->
+            <section id="pedidos" class="tab-content">
+                <div class="tab-header">
+                    <h2>Gestionar Pedidos</h2>
+                    <div class="filtros-pedidos">
+                        <select id="filtro-estado" class="filtro">
+                            <option value="">Todos los estados</option>
+                            <option value="pendiente">Pendiente</option>
+                            <option value="procesando">Procesando</option>
+                            <option value="completado">Completado</option>
+                            <option value="cancelado">Cancelado</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="lista-container">
+                    <table id="tabla-pedidos">
+                        <thead>
+                            <tr>
+                                <th>ID Pedido</th>
+                                <th>Cliente</th>
+                                <th>Fecha</th>
+                                <th>Total</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-pedidos">
+                            <!-- Se llena dinámicamente -->
+                        </tbody>
+                    </table>
+                    <div id="sin-pedidos" class="empty-state">
+                        No hay pedidos aún. Los pedidos aparecerán aquí.
+                    </div>
+                </div>
+
+                <!-- Modal de detalles del pedido -->
+                <div id="modal-pedido" class="modal" style="display: none;">
+                    <div class="modal-content">
+                        <span class="close-modal">&times;</span>
+                        <h3>Detalles del Pedido</h3>
+                        <div id="detalles-pedido-content">
+                            <!-- Se llena dinámicamente -->
+                        </div>
+                        <div class="modal-footer">
+                            <select id="nuevo-estado" class="form-group">
+                                <option value="">Cambiar estado a:</option>
+                                <option value="pendiente">Pendiente</option>
+                                <option value="procesando">Procesando</option>
+                                <option value="completado">Completado</option>
+                                <option value="cancelado">Cancelado</option>
+                            </select>
+                            <button id="btn-guardar-estado" class="btn-guardar">Actualizar Estado</button>
+                            <button id="btn-cerrar-modal" class="btn-cancelar">Cerrar</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB: NOTIFICACIONES -->
+            <section id="notificaciones" class="tab-content">
+                <div class="tab-header">
+                    <h2>Notificaciones de Pedidos</h2>
+                    <div class="filtros-notificaciones">
+                        <input type="text" id="filtro-cliente-notif" placeholder="Buscar por cliente..." class="filtro-input">
+                    </div>
+                </div>
+
+                <div class="lista-container">
+                    <table id="tabla-notificaciones">
+                        <thead>
+                            <tr>
+                                <th>Cliente</th>
+                                <th>Fecha</th>
+                                <th>ID Pedido</th>
+                                <th>Productos</th>
+                                <th>Cantidad de Artículos</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-notificaciones">
+                            <!-- Se llena dinámicamente -->
+                        </tbody>
+                    </table>
+                    <div id="sin-notificaciones" class="empty-state">
+                        No hay notificaciones de pedidos. Los pedidos aparecerán aquí.
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB: REPORTES -->
+            <section id="reportes" class="tab-content">
+                <div class="tab-header">
+                    <h2>Reportes</h2>
+                </div>
+
+                <div class="reportes-grid">
+                    <div class="reporte-card">
+                        <h3>Total de Productos</h3>
+                        <p class="numero" id="total-productos">0</p>
+                    </div>
+                    <div class="reporte-card">
+                        <h3>Total de Clientes</h3>
+                        <p class="numero" id="total-clientes">0</p>
+                    </div>
+                    <div class="reporte-card">
+                        <h3>Ingresos Totales</h3>
+                        <p class="numero" id="ingresos-totales">$0.00</p>
+                    </div>
+                </div>
+
+                <div class="acciones-admin">
+                    <button class="btn-riesgo" id="btn-limpiar-datos">Limpiar Base de Datos</button>
+                    <button class="btn-info" id="btn-exportar-datos">Exportar Datos</button>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Librerías para PDF y Email -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script src="config.js"></script>
+    
+    <script src="admin.js"></script>
+</body>
+</html>

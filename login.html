@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - ZUARSE</title>
+    <link rel="stylesheet" href="login-style.css">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-box">
+            <div class="login-header">
+                <h1>ZUARSE</h1>
+                <p>Sistema de Gestión</p>
+            </div>
+
+            <div class="tabs-login">
+                <button class="tab-login active" data-tab="usuario">Usuario</button>
+                <button class="tab-login" data-tab="admin">Administrador</button>
+            </div>
+
+            <!-- PANEL USUARIO -->
+            <form id="form-usuario" class="form-login active">
+                <h2>Acceso a Tienda</h2>
+                
+                <div class="form-group">
+                    <label for="usuario-email">Email:</label>
+                    <input type="email" id="usuario-email" placeholder="tu@email.com" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="usuario-password">Contraseña:</label>
+                    <input type="password" id="usuario-password" placeholder="••••••••" required>
+                </div>
+
+                <button type="submit" class="btn-login">Entrar como Usuario</button>
+
+                <div class="form-footer">
+                    <label class="checkbox">
+                        <input type="checkbox" id="usuario-recordar">
+                        <span>Recuérdame</span>
+                    </label>
+                    <a href="recuperar-password.html" class="link-recuperar">¿Olvidaste tu contraseña?</a>
+                </div>
+            </form>
+
+            <!-- PANEL ADMIN -->
+            <form id="form-admin" class="form-login">
+                <h2>Acceso Administrativo</h2>
+                
+                <div class="form-group">
+                    <label for="admin-usuario">Usuario Administrador:</label>
+                    <input type="text" id="admin-usuario" placeholder="admin" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="admin-password">Contraseña:</label>
+                    <input type="password" id="admin-password" placeholder="••••••••" required>
+                </div>
+
+                <button type="submit" class="btn-login btn-admin">Entrar como Admin</button>
+
+                <div class="info-admin">
+                    <p><strong>Credenciales de prueba:</strong></p>
+                    <p>Usuario: <code>admin</code></p>
+                    <p>Contraseña: <code>admin123</code></p>
+                </div>
+            </form>
+
+            <div class="login-footer">
+                <p>¿Primera vez? <a href="registro.html" class="link-tienda">Crear cuenta</a></p>
+                <p>O <a href="index.html" class="link-tienda">ir a la tienda</a></p>
+            </div>
+        </div>
+
+        <!-- MENSAJE DE ERROR -->
+        <div id="error-message" class="error-message" style="display: none;">
+            <span id="error-text"></span>
+            <button class="btn-close-error">&times;</button>
+        </div>
+    </div>
+
+    <script src="login.js"></script>
+</body>
+</html>

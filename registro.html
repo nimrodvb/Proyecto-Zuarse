@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro - ZUARSE</title>
+    <link rel="stylesheet" href="login-style.css">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-box">
+            <div class="login-header">
+                <h1>ZUARSE</h1>
+                <p>Crear Nueva Cuenta</p>
+            </div>
+
+            <!-- Mensaje de Error -->
+            <div id="error-message" class="error-message" style="display: none;">
+                <span id="error-text"></span>
+                <button type="button" class="btn-close-error">&times;</button>
+            </div>
+
+            <!-- Formulario de Registro -->
+            <form id="form-registro" class="login-form">
+                <!-- Email -->
+                <div class="form-group">
+                    <label for="email-registro">Email:</label>
+                    <input type="email" id="email-registro" placeholder="tu@email.com" required>
+                </div>
+
+                <!-- Contraseña -->
+                <div class="form-group">
+                    <label for="password-registro">Contraseña:</label>
+                    <input type="password" id="password-registro" placeholder="Mínimo 6 caracteres" required>
+                </div>
+
+                <!-- Confirmar Contraseña -->
+                <div class="form-group">
+                    <label for="confirmar-password-registro">Confirmar Contraseña:</label>
+                    <input type="password" id="confirmar-password-registro" placeholder="Repite tu contraseña" required>
+                </div>
+
+                <!-- Pregunta de Seguridad -->
+                <div class="form-group">
+                    <label for="pregunta-seguridad-registro">Pregunta de Seguridad:</label>
+                    <select id="pregunta-seguridad-registro" required>
+                        <option value="">-- Selecciona una pregunta --</option>
+                        <option value="1">¿Cuál es el nombre de tu mascota favorita?</option>
+                        <option value="2">¿En qué ciudad naciste?</option>
+                        <option value="3">¿Cuál es el nombre de tu madre?</option>
+                        <option value="4">¿Cuál es tu película favorita?</option>
+                        <option value="5">¿En qué año naciste?</option>
+                    </select>
+                </div>
+
+                <!-- Respuesta de Seguridad -->
+                <div class="form-group">
+                    <label for="respuesta-seguridad-registro">Tu Respuesta:</label>
+                    <input type="text" id="respuesta-seguridad-registro" placeholder="Responde la pregunta" required>
+                </div>
+
+                <!-- Botón Registro -->
+                <button type="submit" class="btn-login">Crear Cuenta</button>
+            </form>
+
+            <!-- Footer con opciones -->
+            <div class="login-footer">
+                <p>¿Ya tienes cuenta? <a href="login.html" class="link-tienda">Inicia Sesión</a></p>
+            </div>
+        </div>
+    </div>
+
+    <script src="registro.js"></script>
+</body>
+</html>
