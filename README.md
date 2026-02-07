@@ -76,10 +76,16 @@ index.html
 ✅ **Gestión de Productos**
 - Crear, editar, eliminar productos
 - Campos: nombre, descripción, precio, imagen, stock, categoría
+- **Buscadores en tiempo real** por nombre y categoría
+
+✅ **Gestión de Categorías**
+- Crear, editar, eliminar categorías
+- **Buscador en tiempo real** por nombre
 
 ✅ **Gestión de Clientes**
 - Crear, editar, eliminar clientes
 - Campos: nombre, email, teléfono, dirección, ciudad, estado
+- **Buscador inteligente** (ignora tildes y corrige errores ortográficos leves)
 
 ✅ **Gestión de Pedidos**
 - Ver todos los pedidos generados desde la tienda
