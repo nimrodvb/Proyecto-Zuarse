@@ -35,7 +35,6 @@
                 <button class="tab-btn" data-tab="compras">Compras</button>
                 <button class="tab-btn" data-tab="pedidos">Pedidos</button>
                 <button class="tab-btn" data-tab="notificaciones">Notificaciones</button>
-                <button class="tab-btn" data-tab="reportes">Reportes</button>
             </nav>
 
             <!-- TAB: PRODUCTOS -->
@@ -89,11 +88,6 @@
                     </form>
                 </div>
 
-                <div class="filtros-container" style="display: flex; gap: 10px; margin-bottom: 15px;">
-                    <input type="text" id="filtro-producto-nombre" placeholder="Buscar por nombre..." class="filtro-input" style="flex: 1;">
-                    <input type="text" id="filtro-producto-categoria" placeholder="Buscar por categoría..." class="filtro-input" style="flex: 1;">
-                </div>
-
                 <div class="lista-container">
                     <table id="tabla-productos">
                         <thead>
@@ -141,10 +135,6 @@
                             <button type="button" class="btn-cancelar" id="cancelar-categoria">Cancelar</button>
                         </div>
                     </form>
-                </div>
-
-                <div class="filtros-container" style="margin-bottom: 15px;">
-                    <input type="text" id="filtro-categoria-nombre" placeholder="Buscar categoría..." class="filtro-input" style="width: 100%;">
                 </div>
 
                 <div class="lista-container">
@@ -219,10 +209,6 @@
                     </form>
                 </div>
 
-                <div class="filtros-container" style="margin-bottom: 15px;">
-                    <input type="text" id="filtro-cliente" placeholder="Buscar cliente (nombre, email, ciudad)..." class="filtro-input" style="width: 100%;">
-                </div>
-
                 <div class="lista-container">
                     <table id="tabla-clientes">
                         <thead>
@@ -278,10 +264,6 @@
                             <button type="button" class="btn-cancelar" id="cancelar-proveedor">Cancelar</button>
                         </div>
                     </form>
-                </div>
-
-                <div class="filtros-container">
-                    <input type="text" id="filtro-proveedor" placeholder="Buscar proveedor..." class="filtro-input">
                 </div>
 
                 <div class="lista-container">
@@ -386,11 +368,6 @@
                     </form>
                 </div>
 
-                <div class="filtros-container">
-                    <h3>Historial de Compras</h3>
-                    <input type="text" id="filtro-compra-proveedor" placeholder="Buscar por proveedor..." class="filtro-input">
-                </div>
-
                 <div class="lista-container">
                     <table id="tabla-compras">
                         <thead>
@@ -417,7 +394,9 @@
             <section id="pedidos" class="tab-content">
                 <div class="tab-header">
                     <h2>Gestionar Pedidos</h2>
-                    <div class="filtros-pedidos">
+                    <div class="filtros-pedidos" style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                        <input type="text" id="filtro-pedido-producto" placeholder="Buscar producto..." style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        <input type="text" id="filtro-pedido-categoria" placeholder="Buscar categoría..." style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                         <select id="filtro-estado" class="filtro">
                             <option value="">Todos los estados</option>
                             <option value="pendiente">Pendiente</option>
@@ -476,9 +455,6 @@
             <section id="notificaciones" class="tab-content">
                 <div class="tab-header">
                     <h2>Notificaciones de Pedidos</h2>
-                    <div class="filtros-notificaciones">
-                        <input type="text" id="filtro-cliente-notif" placeholder="Buscar por cliente..." class="filtro-input">
-                    </div>
                 </div>
 
                 <div class="lista-container">
@@ -502,129 +478,6 @@
                     </div>
                 </div>
             </section>
-
-            <!-- TAB: REPORTES -->
-            <section id="reportes" class="tab-content">
-                <div class="tab-header">
-                    <h2>Reportes</h2>
-                    <h2>Reportes y Análisis</h2>
-                </div>
-
-                <div class="reportes-grid">
-                    <div class="reporte-card">
-                        <h3>Total de Productos</h3>
-                        <p class="numero" id="total-productos">0</p>
-                <!-- FILTROS DE REPORTES -->
-                <div class="filtros-reportes-container" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                    <h4 style="margin-top: 0;">Filtros y Segmentación</h4>
-                    <div class="form-row" style="gap: 10px; align-items: flex-end;">
-                        <div class="form-group" style="flex: 1;">
-                            <label>Fecha Inicio:</label>
-                            <input type="date" id="rep-fecha-inicio">
-                        </div>
-                        <div class="form-group" style="flex: 1;">
-                            <label>Fecha Fin:</label>
-                            <input type="date" id="rep-fecha-fin">
-                        </div>
-                        <div class="form-group" style="flex: 1;">
-                            <label>Periodicidad:</label>
-                            <select id="rep-periodicidad">
-                                <option value="dia">Por Día</option>
-                                <option value="mes">Por Mes</option>
-                                <option value="anio">Por Año</option>
-                            </select>
-                        </div>
-                        <div class="form-group" style="flex: 1;">
-                            <label>Estado:</label>
-                            <select id="rep-estado">
-                                <option value="">Todos</option>
-                                <option value="pendiente">Pendiente</option>
-                                <option value="procesando">Procesando</option>
-                                <option value="completado">Completado</option>
-                                <option value="cancelado">Cancelado</option>
-                            </select>
-                        </div>
-                        <div class="form-group" style="flex: 1;">
-                            <button id="btn-generar-reporte" class="btn-guardar" style="width: 100%;">Generar Reporte</button>
-                        </div>
-                    </div>
-                    <div class="reporte-card">
-                        <h3>Total de Clientes</h3>
-                        <p class="numero" id="total-clientes">0</p>
-                </div>
-
-                <!-- TARJETAS DE MÉTRICAS (KPIs) -->
-                <div class="reportes-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
-                    <div class="reporte-card" style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); text-align: center;">
-                        <h3 style="font-size: 14px; color: #666;">Total Ventas ($)</h3>
-                        <p class="numero" id="kpi-total-venta" style="font-size: 24px; font-weight: bold; color: #667eea; margin: 10px 0;">$0.00</p>
-                    </div>
-                    <div class="reporte-card">
-                        <h3>Ingresos Totales</h3>
-                        <p class="numero" id="ingresos-totales">$0.00</p>
-                    <div class="reporte-card" style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); text-align: center;">
-                        <h3 style="font-size: 14px; color: #666;">Cant. Ventas</h3>
-                        <p class="numero" id="kpi-cantidad-ventas" style="font-size: 24px; font-weight: bold; color: #28a745; margin: 10px 0;">0</p>
-                    </div>
-                    <div class="reporte-card" style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); text-align: center;">
-                        <h3 style="font-size: 14px; color: #666;">Unidades Vendidas</h3>
-                        <p class="numero" id="kpi-unidades" style="font-size: 24px; font-weight: bold; color: #17a2b8; margin: 10px 0;">0</p>
-                    </div>
-                    <div class="reporte-card" style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); text-align: center;">
-                        <h3 style="font-size: 14px; color: #666;">Promedio Venta</h3>
-                        <p class="numero" id="kpi-promedio" style="font-size: 24px; font-weight: bold; color: #ffc107; margin: 10px 0;">$0.00</p>
-                    </div>
-                    <div class="reporte-card" style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); text-align: center;">
-                        <h3 style="font-size: 14px; color: #666;">Min / Max</h3>
-                        <p class="numero" id="kpi-min-max" style="font-size: 18px; font-weight: bold; color: #6c757d; margin: 10px 0;">$0 / $0</p>
-                    </div>
-                </div>
-
-                <div class="acciones-admin">
-                    <button class="btn-riesgo" id="btn-limpiar-datos">Limpiar Base de Datos</button>
-                    <button class="btn-info" id="btn-exportar-datos">Exportar Datos</button>
-                <!-- GRÁFICOS -->
-                <div class="graficos-container" style="display: flex; gap: 20px; margin-bottom: 20px; flex-wrap: wrap;">
-                    <div style="flex: 2; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); min-width: 300px;">
-                        <h4>Tendencia de Ventas</h4>
-                        <canvas id="chart-tendencia"></canvas>
-                    </div>
-                    <div style="flex: 1; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); min-width: 300px;">
-                        <h4>Ventas por Estado</h4>
-                        <canvas id="chart-estado"></canvas>
-                    </div>
-                </div>
-
-                <!-- TABLA DETALLADA -->
-                <div class="lista-container">
-                    <h4>Detalle de Registros</h4>
-                    <table id="tabla-reportes">
-                        <thead>
-                            <tr>
-                                <th>Fecha</th>
-                                <th>Pedido ID</th>
-                                <th>Cliente</th>
-                                <th>Items</th>
-                                <th>Total</th>
-                                <th>Estado</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tbody-reportes">
-                            <!-- Dinámico -->
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- ACCIONES DE EXPORTACIÓN -->
-                <div class="acciones-admin" style="margin-top: 20px; border-top: 1px solid #ddd; padding-top: 20px;">
-                    <h3>Exportar Reporte</h3>
-                    <div style="display: flex; gap: 10px;">
-                        <button class="btn-info" id="btn-exportar-excel">📊 Exportar a Excel (CSV)</button>
-                        <button class="btn-info" id="btn-exportar-pdf-reporte" style="background-color: #dc3545;">📄 Exportar a PDF</button>
-                        <button class="btn-riesgo" id="btn-limpiar-datos" style="margin-left: auto;">⚠️ Limpiar Base de Datos</button>
-                    </div>
-                </div>
-            </section>
         </div>
     </div>
 
@@ -634,114 +487,5 @@
     <script src="config.js"></script>
     
     <script src="admin.js"></script>
-    <script>
-        // ==================== BUSCADORES DE PRODUCTOS ====================
-        // Lógica para filtrar la tabla de productos en tiempo real
-        document.addEventListener('DOMContentLoaded', function() {
-            // Referencias a los campos de búsqueda
-            const inputNombre = document.getElementById('filtro-producto-nombre');
-            const inputCategoria = document.getElementById('filtro-producto-categoria');
-
-            function filtrarProductos() {
-                // Convertir a minúsculas para búsqueda "case-insensitive" (indiferente a mayúsculas)
-                const textoNombre = inputNombre.value.toLowerCase();
-                const textoCategoria = inputCategoria.value.toLowerCase();
-                const filas = document.querySelectorAll('#tbody-productos tr');
-
-                filas.forEach(fila => {
-                    // Obtener datos de las columnas: Índice 1 (Nombre) y Índice 4 (Categoría)
-                    const nombre = fila.children[1] ? fila.children[1].textContent.toLowerCase() : '';
-                    const categoria = fila.children[4] ? fila.children[4].textContent.toLowerCase() : '';
-
-                    // Verificar si el texto buscado está incluido en el contenido de la celda
-                    const coincideNombre = nombre.includes(textoNombre);
-                    const coincideCategoria = categoria.includes(textoCategoria);
-
-                    // Mostrar fila solo si coincide con AMBOS filtros (Nombre Y Categoría)
-                    fila.style.display = (coincideNombre && coincideCategoria) ? '' : 'none';
-                });
-            }
-
-            if (inputNombre) inputNombre.addEventListener('input', filtrarProductos);
-            if (inputCategoria) inputCategoria.addEventListener('input', filtrarProductos);
-
-            // ==================== BUSCADOR DE CATEGORÍAS ====================
-            // Lógica para filtrar la tabla de categorías en tiempo real
-            const inputCatNombre = document.getElementById('filtro-categoria-nombre');
-
-            function filtrarCategorias() {
-                // Convertir a minúsculas para búsqueda "case-insensitive"
-                const texto = inputCatNombre.value.toLowerCase();
-                const filas = document.querySelectorAll('#tbody-categorias tr');
-
-                filas.forEach(fila => {
-                    // Obtener nombre de la categoría (Índice 1)
-                    const nombre = fila.children[1] ? fila.children[1].textContent.toLowerCase() : '';
-                    // Mostrar fila si coincide
-                    fila.style.display = nombre.includes(texto) ? '' : 'none';
-                });
-            }
-
-            if (inputCatNombre) inputCatNombre.addEventListener('input', filtrarCategorias);
-
-            // ==================== BUSCADOR DE CLIENTES ====================
-            // Lógica para filtrar la tabla de clientes en tiempo real
-            // Incluye normalización de texto y búsqueda difusa (fuzzy search)
-            const inputCliente = document.getElementById('filtro-cliente');
-
-            // Función para normalizar texto (quitar tildes y minúsculas)
-            function normalizar(texto) {
-                return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-            }
-
-            // Algoritmo de Levenshtein para coincidencias aproximadas (errores de escritura)
-            function levenshtein(a, b) {
-                if (a.length === 0) return b.length;
-                if (b.length === 0) return a.length;
-                const matrix = [];
-                for (let i = 0; i <= b.length; i++) matrix[i] = [i];
-                for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
-                for (let i = 1; i <= b.length; i++) {
-                    for (let j = 1; j <= a.length; j++) {
-                        const cost = b.charAt(i - 1) === a.charAt(j - 1) ? 0 : 1;
-                        matrix[i][j] = Math.min(matrix[i - 1][j] + 1, matrix[i][j - 1] + 1, matrix[i - 1][j - 1] + cost);
-                    }
-                }
-                return matrix[b.length][a.length];
-            }
-
-            function filtrarClientes() {
-                const texto = normalizar(inputCliente.value);
-                const filas = document.querySelectorAll('#tbody-clientes tr');
-
-                filas.forEach(fila => {
-                    const nombre = fila.children[1] ? normalizar(fila.children[1].textContent) : '';
-                    const email = fila.children[2] ? normalizar(fila.children[2].textContent) : '';
-                    const ciudad = fila.children[4] ? normalizar(fila.children[4].textContent) : '';
-                    
-                    // 1. Coincidencia directa (ignorando tildes)
-                    let coincide = nombre.includes(texto) || email.includes(texto) || ciudad.includes(texto);
-
-                    // 2. Coincidencia aproximada (si está mal escrito)
-                    // Se activa solo si el texto buscado tiene más de 3 caracteres para evitar falsos positivos
-                    if (!coincide && texto.length > 3) {
-                        // Umbral dinámico: permite 2 errores si la palabra es larga (>5 chars), sino solo 1
-                        const umbral = texto.length > 5 ? 2 : 1; 
-                        const palabras = nombre.split(/\s+/); // Buscar en cada palabra del nombre
-                        for (let palabra of palabras) {
-                            if (levenshtein(texto, palabra) <= umbral) {
-                                coincide = true;
-                                break;
-                            }
-                        }
-                    }
-
-                    fila.style.display = coincide ? '' : 'none';
-                });
-            }
-
-            if (inputCliente) inputCliente.addEventListener('input', filtrarClientes);
-        });
-    </script>
 </body>
 </html>

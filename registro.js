@@ -136,7 +136,12 @@ function mostrarMensajeExito() {
 
 // ==================== CREAR CLIENTE AUTOMÁTICO ====================
 function crearClienteDesdeRegistro(email, usuario) {
-    const clientes = JSON.parse(localStorage.getItem('clientes')) || {};
+    let clientes = JSON.parse(localStorage.getItem('clientes'));
+    
+    // Asegurar que sea array para compatibilidad con admin
+    if (!Array.isArray(clientes)) {
+        clientes = clientes ? Object.values(clientes) : [];
+    }
     
     // Extraer nombre del email
     const nombreCliente = email.split('@')[0];
@@ -154,7 +159,7 @@ function crearClienteDesdeRegistro(email, usuario) {
     };
     
     // Guardar cliente
-    clientes[email] = nuevoCliente;
+    clientes.push(nuevoCliente);
     localStorage.setItem('clientes', JSON.stringify(clientes));
 }
 

@@ -17,15 +17,16 @@ function cerrarSesionAdmin() {
 
 // INICIALIZACIÓN
 document.addEventListener('DOMContentLoaded', function() {
-    cargarProductos();
-    cargarClientes();
-    cargarCategorias();
-    cargarProveedores();
-    cargarCompras();
-    cargarPedidos();
-    cargarNotificaciones();
-    actualizarReportes();
+    // Configurar eventos primero para asegurar que la navegación funcione
     configurarEventos();
+
+    try { cargarProductos(); } catch(e) { console.error(e); }
+    try { cargarClientes(); } catch(e) { console.error(e); }
+    try { cargarCategorias(); } catch(e) { console.error(e); }
+    try { cargarProveedores(); } catch(e) { console.error(e); }
+    try { cargarCompras(); } catch(e) { console.error(e); }
+    try { cargarPedidos(); } catch(e) { console.error(e); }
+    try { cargarNotificaciones(); } catch(e) { console.error(e); }
 });
 
 // ==================== CONFIGURAR EVENTOS ====================
@@ -36,14 +37,20 @@ function configurarEventos() {
     });
 
     // Productos
-    document.getElementById('btn-nuevo-producto').addEventListener('click', mostrarFormProducto);
-    document.getElementById('cancelar-producto').addEventListener('click', ocultarFormProducto);
-    document.getElementById('formulario-producto').addEventListener('submit', guardarProducto);
+    const btnNuevoProducto = document.getElementById('btn-nuevo-producto');
+    const cancelarProducto = document.getElementById('cancelar-producto');
+    const formularioProducto = document.getElementById('formulario-producto');
+    if (btnNuevoProducto) btnNuevoProducto.addEventListener('click', mostrarFormProducto);
+    if (cancelarProducto) cancelarProducto.addEventListener('click', ocultarFormProducto);
+    if (formularioProducto) formularioProducto.addEventListener('submit', guardarProducto);
 
     // Clientes
-    document.getElementById('btn-nuevo-cliente').addEventListener('click', mostrarFormCliente);
-    document.getElementById('cancelar-cliente').addEventListener('click', ocultarFormCliente);
-    document.getElementById('formulario-cliente').addEventListener('submit', guardarCliente);
+    const btnNuevoCliente = document.getElementById('btn-nuevo-cliente');
+    const cancelarCliente = document.getElementById('cancelar-cliente');
+    const formularioCliente = document.getElementById('formulario-cliente');
+    if (btnNuevoCliente) btnNuevoCliente.addEventListener('click', mostrarFormCliente);
+    if (cancelarCliente) cancelarCliente.addEventListener('click', ocultarFormCliente);
+    if (formularioCliente) formularioCliente.addEventListener('submit', guardarCliente);
 
     // Categorías
     const btnNuevaCategoria = document.getElementById('btn-nueva-categoria');
@@ -54,40 +61,37 @@ function configurarEventos() {
     if (formularioCategoria) formularioCategoria.addEventListener('submit', guardarCategoria);
 
     // Notificaciones
-    const filtroClienteNotif = document.getElementById('filtro-cliente-notif');
-    if (filtroClienteNotif) {
-        filtroClienteNotif.addEventListener('keyup', filtrarNotificaciones);
-    }
 
     // Proveedores
     const btnNuevoProveedor = document.getElementById('btn-nuevo-proveedor');
     const cancelarProveedor = document.getElementById('cancelar-proveedor');
     const formularioProveedor = document.getElementById('formulario-proveedor');
-    const filtroProveedor = document.getElementById('filtro-proveedor');
     if (btnNuevoProveedor) btnNuevoProveedor.addEventListener('click', mostrarFormProveedor);
     if (cancelarProveedor) cancelarProveedor.addEventListener('click', ocultarFormProveedor);
     if (formularioProveedor) formularioProveedor.addEventListener('submit', guardarProveedor);
-    if (filtroProveedor) filtroProveedor.addEventListener('keyup', filtrarProveedores);
 
     // Compras
     const btnNuevaCompra = document.getElementById('btn-nueva-compra');
     const cancelarCompra = document.getElementById('cancelar-compra');
     const formularioCompra = document.getElementById('formulario-compra');
-    const filtroCompra = document.getElementById('filtro-compra-proveedor');
     const selectCatCompra = document.getElementById('compra-categoria-select');
     const btnAddProdCompra = document.getElementById('btn-add-prod-compra');
     if (btnNuevaCompra) btnNuevaCompra.addEventListener('click', mostrarFormCompra);
     if (cancelarCompra) cancelarCompra.addEventListener('click', ocultarFormCompra);
     if (formularioCompra) formularioCompra.addEventListener('submit', guardarCompra);
-    if (filtroCompra) filtroCompra.addEventListener('keyup', filtrarCompras);
     if (selectCatCompra) selectCatCompra.addEventListener('change', filtrarProductosCompra);
     if (btnAddProdCompra) btnAddProdCompra.addEventListener('click', agregarProductoACompra);
 
     // Pedidos
     const filtroEstado = document.getElementById('filtro-estado');
+    const filtroPedidoProducto = document.getElementById('filtro-pedido-producto');
+    const filtroPedidoCategoria = document.getElementById('filtro-pedido-categoria');
+
     if (filtroEstado) {
         filtroEstado.addEventListener('change', cargarPedidos);
     }
+    if (filtroPedidoProducto) filtroPedidoProducto.addEventListener('input', cargarPedidos);
+    if (filtroPedidoCategoria) filtroPedidoCategoria.addEventListener('input', cargarPedidos);
     
     const closeModal = document.querySelector('.close-modal');
     const btnCerrarModal = document.getElementById('btn-cerrar-modal');
@@ -96,10 +100,6 @@ function configurarEventos() {
     if (closeModal) closeModal.addEventListener('click', cerrarModalPedido);
     if (btnCerrarModal) btnCerrarModal.addEventListener('click', cerrarModalPedido);
     if (btnGuardarEstado) btnGuardarEstado.addEventListener('click', guardarEstadoPedido);
-
-    // Reportes
-    document.getElementById('btn-limpiar-datos').addEventListener('click', limpiarBaseDatos);
-    document.getElementById('btn-exportar-datos').addEventListener('click', exportarDatos);
 }
 
 // ==================== NAVEGACIÓN DE TABS ====================
@@ -157,7 +157,6 @@ function guardarProducto(e) {
     localStorage.setItem('productos', JSON.stringify(productos));
     ocultarFormProducto();
     cargarProductos();
-    actualizarReportes();
     alert('Producto guardado exitosamente');
 }
 
@@ -165,6 +164,8 @@ function cargarProductos() {
     const productos = JSON.parse(localStorage.getItem('productos')) || [];
     const tbody = document.getElementById('tbody-productos');
     const sinProductos = document.getElementById('sin-productos');
+
+    if (!tbody) return;
 
     tbody.innerHTML = '';
 
@@ -180,7 +181,7 @@ function cargarProductos() {
         row.innerHTML = `
             <td>#${producto.id}</td>
             <td>${producto.nombre}</td>
-            <td>$${producto.precio.toFixed(2)}</td>
+            <td>$${(producto.precio || 0).toFixed(2)}</td>
             <td>${producto.stock}</td>
             <td>${producto.categoria}</td>
             <td>
@@ -217,7 +218,6 @@ function eliminarProducto(id) {
     productos = productos.filter(p => p.id !== id);
     localStorage.setItem('productos', JSON.stringify(productos));
     cargarProductos();
-    actualizarReportes();
 }
 
 // ==================== CLIENTES ====================
@@ -248,7 +248,11 @@ function guardarCliente(e) {
         fechaRegistro: clienteEditando?.fechaRegistro || new Date().toLocaleDateString()
     };
 
-    let clientes = JSON.parse(localStorage.getItem('clientes')) || [];
+    let clientes = JSON.parse(localStorage.getItem('clientes'));
+    // Asegurar que sea un array (corrección de compatibilidad)
+    if (!Array.isArray(clientes)) {
+        clientes = clientes ? Object.values(clientes) : [];
+    }
 
     if (clienteEditando) {
         // Actualizar
@@ -261,14 +265,23 @@ function guardarCliente(e) {
     localStorage.setItem('clientes', JSON.stringify(clientes));
     ocultarFormCliente();
     cargarClientes();
-    actualizarReportes();
     alert('Cliente guardado exitosamente');
 }
 
 function cargarClientes() {
-    const clientes = JSON.parse(localStorage.getItem('clientes')) || [];
+    let clientes = JSON.parse(localStorage.getItem('clientes'));
+    
+    // Corrección automática de datos: Si es objeto, convertir a array y guardar
+    if (clientes && !Array.isArray(clientes)) {
+        clientes = Object.values(clientes);
+        localStorage.setItem('clientes', JSON.stringify(clientes));
+    }
+    clientes = clientes || [];
+
     const tbody = document.getElementById('tbody-clientes');
     const sinClientes = document.getElementById('sin-clientes');
+
+    if (!tbody) return;
 
     tbody.innerHTML = '';
 
@@ -289,8 +302,8 @@ function cargarClientes() {
             <td>${cliente.ciudad || '-'}</td>
             <td><span class="estado-${cliente.estado}">${cliente.estado}</span></td>
             <td>
-                <button class="btn-editar" onclick="editarCliente(${cliente.id})">Editar</button>
-                <button class="btn-eliminar" onclick="eliminarCliente(${cliente.id})">Eliminar</button>
+                <button class="btn-editar" onclick="editarCliente('${cliente.id}')">Editar</button>
+                <button class="btn-eliminar" onclick="eliminarCliente('${cliente.id}')">Eliminar</button>
             </td>
         `;
         tbody.appendChild(row);
@@ -298,8 +311,11 @@ function cargarClientes() {
 }
 
 function editarCliente(id) {
-    const clientes = JSON.parse(localStorage.getItem('clientes')) || [];
-    const cliente = clientes.find(c => c.id === id);
+    let clientes = JSON.parse(localStorage.getItem('clientes'));
+    if (!Array.isArray(clientes)) {
+        clientes = clientes ? Object.values(clientes) : [];
+    }
+    const cliente = clientes.find(c => c.id == id);
 
     if (!cliente) return;
 
@@ -318,11 +334,14 @@ function editarCliente(id) {
 function eliminarCliente(id) {
     if (!confirm('¿Estás seguro de que deseas eliminar este cliente?')) return;
 
-    let clientes = JSON.parse(localStorage.getItem('clientes')) || [];
-    clientes = clientes.filter(c => c.id !== id);
+    let clientes = JSON.parse(localStorage.getItem('clientes'));
+    if (!Array.isArray(clientes)) {
+        clientes = clientes ? Object.values(clientes) : [];
+    }
+
+    clientes = clientes.filter(c => c.id != id);
     localStorage.setItem('clientes', JSON.stringify(clientes));
     cargarClientes();
-    actualizarReportes();
 }
 
 // ==================== CATEGORÍAS ====================
@@ -373,7 +392,6 @@ function guardarCategoria(e) {
     localStorage.setItem('categorias', JSON.stringify(categorias));
     ocultarFormCategoria();
     cargarCategorias();
-    actualizarReportes();
     alert('Categoría guardada exitosamente');
 }
 
@@ -473,6 +491,11 @@ function cargarNotificaciones() {
         pedido.items.forEach(item => {
             productosText += `${item.nombre}, `;
         });
+        if (pedido.items && Array.isArray(pedido.items)) {
+            pedido.items.forEach(item => {
+                productosText += `${item.nombre}, `;
+            });
+        }
         productosText = productosText.slice(0, -2); // Remover última coma y espacio
         
         // Cantidad de artículos
@@ -490,23 +513,9 @@ function cargarNotificaciones() {
             <td>#${pedido.id}</td>
             <td>${escapeHtml(productosText)}</td>
             <td><span class="badge-cantidad">${cantidadArticulos}</span></td>
-            <td><strong>$${pedido.total.toFixed(2)}</strong></td>
+            <td><strong>$${(pedido.total || 0).toFixed(2)}</strong></td>
         `;
         tbody.appendChild(fila);
-    });
-}
-
-function filtrarNotificaciones() {
-    const filtro = document.getElementById('filtro-cliente-notif').value.toLowerCase();
-    const filas = document.querySelectorAll('.notificacion-row');
-    
-    filas.forEach(fila => {
-        const cliente = fila.getAttribute('data-cliente');
-        if (cliente.includes(filtro)) {
-            fila.style.display = '';
-        } else {
-            fila.style.display = 'none';
-        }
     });
 }
 
@@ -621,20 +630,6 @@ function eliminarProveedor(id) {
     localStorage.setItem('proveedores', JSON.stringify(proveedores));
     cargarProveedores();
     alert('Proveedor eliminado correctamente');
-}
-
-function filtrarProveedores() {
-    const filtro = document.getElementById('filtro-proveedor').value.toLowerCase();
-    const filas = document.querySelectorAll('.proveedor-row');
-    
-    filas.forEach(fila => {
-        const nombre = fila.getAttribute('data-nombre');
-        if (nombre.includes(filtro)) {
-            fila.style.display = '';
-        } else {
-            fila.style.display = 'none';
-        }
-    });
 }
 
 // ==================== COMPRAS ====================
@@ -757,7 +752,7 @@ function cargarCompras() {
             <td>${escapeHtml(c.proveedor)}</td>
             <td>${new Date(c.fecha).toLocaleDateString()}</td>
             <td>${escapeHtml(c.productos)}</td>
-            <td>$${c.total.toFixed(2)}</td>
+            <td>$${(c.total || 0).toFixed(2)}</td>
             <td>
                 <button class="btn-editar" onclick="editarCompra(${c.id})">Editar</button>
                 <button class="btn-eliminar" onclick="eliminarCompra(${c.id})">Eliminar</button>
@@ -792,20 +787,6 @@ function eliminarCompra(id) {
     compras = compras.filter(c => c.id !== id);
     localStorage.setItem('compras', JSON.stringify(compras));
     cargarCompras();
-}
-
-function filtrarCompras() {
-    const filtro = document.getElementById('filtro-compra-proveedor').value.toLowerCase();
-    const filas = document.querySelectorAll('.compra-row');
-    
-    filas.forEach(fila => {
-        const proveedor = fila.getAttribute('data-proveedor');
-        if (proveedor.includes(filtro)) {
-            fila.style.display = '';
-        } else {
-            fila.style.display = 'none';
-        }
-    });
 }
 
 function filtrarProductosCompra() {
@@ -865,72 +846,45 @@ function agregarProductoACompra() {
     itemPrecioInput.value = '';
 }
 
-// ==================== REPORTES ====================
-function actualizarReportes() {
-    const productos = JSON.parse(localStorage.getItem('productos')) || [];
-    const clientes = JSON.parse(localStorage.getItem('clientes')) || [];
-
-    document.getElementById('total-productos').textContent = productos.length;
-    document.getElementById('total-clientes').textContent = clientes.length;
-
-    // Calcular ingresos (suponiendo que se vendió el 50% del stock a precio actual)
-    const ingresos = productos.reduce((total, p) => {
-        return total + (p.precio * (p.stock * 0.5)); // Cálculo estimado
-    }, 0);
-    document.getElementById('ingresos-totales').textContent = '$' + ingresos.toFixed(2);
-}
-
-// ==================== UTILIDADES ====================
-function limpiarBaseDatos() {
-    if (!confirm('⚠️ ¿Estás COMPLETAMENTE seguro? Esto eliminará TODOS los datos (productos y clientes).')) {
-        return;
-    }
-    if (!confirm('Esta acción es irreversible. ¿Proceder?')) {
-        return;
-    }
-
-    localStorage.removeItem('productos');
-    localStorage.removeItem('clientes');
-    cargarProductos();
-    cargarClientes();
-    actualizarReportes();
-    alert('Base de datos limpiada');
-}
-
-function exportarDatos() {
-    const productos = JSON.parse(localStorage.getItem('productos')) || [];
-    const clientes = JSON.parse(localStorage.getItem('clientes')) || [];
-
-    const datos = {
-        exportadoEn: new Date().toLocaleString(),
-        productos: productos,
-        clientes: clientes
-    };
-
-    const json = JSON.stringify(datos, null, 2);
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `datos-zuarse-${new Date().getTime()}.json`;
-    a.click();
-    window.URL.revokeObjectURL(url);
-}
-
 // ==================== PEDIDOS ====================
 function cargarPedidos() {
     const pedidos = JSON.parse(localStorage.getItem('pedidos')) || [];
+    const productos = JSON.parse(localStorage.getItem('productos')) || []; // Cargar productos para buscar categorías
     const tbody = document.getElementById('tbody-pedidos');
     const sinPedidos = document.getElementById('sin-pedidos');
-    const filtroEstado = document.getElementById('filtro-estado').value;
-    
+    const filtroEstadoEl = document.getElementById('filtro-estado');
+    const filtroProductoEl = document.getElementById('filtro-pedido-producto');
+    const filtroCategoriaEl = document.getElementById('filtro-pedido-categoria');
+
+    const filtroEstado = filtroEstadoEl ? filtroEstadoEl.value : '';
+    const filtroProducto = filtroProductoEl ? filtroProductoEl.value.toLowerCase() : '';
+    const filtroCategoria = filtroCategoriaEl ? filtroCategoriaEl.value.toLowerCase() : '';
+
+    if (!tbody) return;
     tbody.innerHTML = '';
     
-    // Filtrar por estado si es necesario
-    let pedidosFiltrados = pedidos;
-    if (filtroEstado) {
-        pedidosFiltrados = pedidos.filter(p => p.estado === filtroEstado);
-    }
+    // Filtrado combinado
+    let pedidosFiltrados = pedidos.filter(p => {
+        // 1. Filtro por Estado
+        if (filtroEstado && (p.estado || 'pendiente') !== filtroEstado) return false;
+
+        // 2. Filtro por Nombre de Producto (busca dentro de los items del pedido)
+        if (filtroProducto) {
+            const tieneProducto = p.items.some(item => item.nombre.toLowerCase().includes(filtroProducto));
+            if (!tieneProducto) return false;
+        }
+
+        // 3. Filtro por Categoría (cruza información con la lista de productos)
+        if (filtroCategoria) {
+            const tieneCategoria = p.items.some(item => {
+                const prod = productos.find(pr => pr.nombre === item.nombre);
+                return prod && prod.categoria && prod.categoria.toLowerCase().includes(filtroCategoria);
+            });
+            if (!tieneCategoria) return false;
+        }
+
+        return true;
+    });
     
     if (pedidosFiltrados.length === 0) {
         sinPedidos.style.display = 'block';
@@ -949,7 +903,7 @@ function cargarPedidos() {
             <td>${pedido.id}</td>
             <td>${pedido.cliente_nombre}</td>
             <td>${fecha}</td>
-            <td>$${pedido.total.toFixed(2)}</td>
+            <td>$${(pedido.total || 0).toFixed(2)}</td>
             <td>
                 <span class="badge badge-${estado}">${estado.charAt(0).toUpperCase() + estado.slice(1)}</span>
             </td>
@@ -1136,7 +1090,7 @@ function enviarPedidoPorEmail(pedidoId) {
     }
     
     // Validar que EmailJS esté configurado
-    if (!validarConfiguracionEmailJS()) {
+    if (typeof validarConfiguracionEmailJS === 'undefined' || !validarConfiguracionEmailJS()) {
         alert('⚠️ EmailJS no está configurado correctamente.\n\nPara usar esta función:\n1. Regístrate en https://www.emailjs.com\n2. Actualiza tu PUBLIC_KEY en config.js\n3. Crea un servicio y plantilla de email\n\nMientras tanto, puedes descargar el PDF del pedido.');
         return;
     }
