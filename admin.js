@@ -43,6 +43,10 @@ function configurarEventos() {
     if (btnNuevoProducto) btnNuevoProducto.addEventListener('click', mostrarFormProducto);
     if (cancelarProducto) cancelarProducto.addEventListener('click', ocultarFormProducto);
     if (formularioProducto) formularioProducto.addEventListener('submit', guardarProducto);
+    const filtroProdNombre = document.getElementById('filtro-producto-nombre');
+    const filtroProdCategoria = document.getElementById('filtro-producto-categoria');
+    if (filtroProdNombre) filtroProdNombre.addEventListener('input', cargarProductos);
+    if (filtroProdCategoria) filtroProdCategoria.addEventListener('input', cargarProductos);
 
     // Clientes
     const btnNuevoCliente = document.getElementById('btn-nuevo-cliente');
@@ -51,6 +55,8 @@ function configurarEventos() {
     if (btnNuevoCliente) btnNuevoCliente.addEventListener('click', mostrarFormCliente);
     if (cancelarCliente) cancelarCliente.addEventListener('click', ocultarFormCliente);
     if (formularioCliente) formularioCliente.addEventListener('submit', guardarCliente);
+    const filtroCliente = document.getElementById('filtro-cliente-nombre');
+    if (filtroCliente) filtroCliente.addEventListener('input', cargarClientes);
 
     // Categorías
     const btnNuevaCategoria = document.getElementById('btn-nueva-categoria');
@@ -59,9 +65,11 @@ function configurarEventos() {
     if (btnNuevaCategoria) btnNuevaCategoria.addEventListener('click', mostrarFormCategoria);
     if (cancelarCategoria) cancelarCategoria.addEventListener('click', ocultarFormCategoria);
     if (formularioCategoria) formularioCategoria.addEventListener('submit', guardarCategoria);
+    const filtroCategoria = document.getElementById('filtro-categoria-nombre');
+    if (filtroCategoria) filtroCategoria.addEventListener('input', cargarCategorias);
 
     // Notificaciones
-
+        
     // Proveedores
     const btnNuevoProveedor = document.getElementById('btn-nuevo-proveedor');
     const cancelarProveedor = document.getElementById('cancelar-proveedor');
@@ -81,6 +89,8 @@ function configurarEventos() {
     if (formularioCompra) formularioCompra.addEventListener('submit', guardarCompra);
     if (selectCatCompra) selectCatCompra.addEventListener('change', filtrarProductosCompra);
     if (btnAddProdCompra) btnAddProdCompra.addEventListener('click', agregarProductoACompra);
+    const filtroCompraProveedor = document.getElementById('filtro-compra-proveedor');
+    if (filtroCompraProveedor) filtroCompraProveedor.addEventListener('input', cargarCompras);
 
     // Pedidos
     const filtroEstado = document.getElementById('filtro-estado');
@@ -164,19 +174,31 @@ function cargarProductos() {
     const productos = JSON.parse(localStorage.getItem('productos')) || [];
     const tbody = document.getElementById('tbody-productos');
     const sinProductos = document.getElementById('sin-productos');
+    const filtroNombreInput = document.getElementById('filtro-producto-nombre');
+    const filtroCategoriaInput = document.getElementById('filtro-producto-categoria');
+    
+    const filtroNombre = filtroNombreInput ? filtroNombreInput.value.toLowerCase().trim() : '';
+    const filtroCategoria = filtroCategoriaInput ? filtroCategoriaInput.value.toLowerCase().trim() : '';
 
     if (!tbody) return;
 
     tbody.innerHTML = '';
 
-    if (productos.length === 0) {
+    const productosFiltrados = productos.filter(p => {
+        const coincideNombre = p.nombre.toLowerCase().includes(filtroNombre);
+        const coincideCategoria = (p.categoria || '').toLowerCase().includes(filtroCategoria);
+        return coincideNombre && coincideCategoria;
+    });
+
+    if (productosFiltrados.length === 0) {
         sinProductos.style.display = 'block';
+        sinProductos.textContent = productos.length === 0 ? 'No hay productos aún. ¡Crea uno nuevo!' : 'No se encontraron productos con esos criterios.';
         return;
     }
 
     sinProductos.style.display = 'none';
 
-    productos.forEach(producto => {
+    productosFiltrados.forEach(producto => {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>#${producto.id}</td>
@@ -280,19 +302,24 @@ function cargarClientes() {
 
     const tbody = document.getElementById('tbody-clientes');
     const sinClientes = document.getElementById('sin-clientes');
+    const filtroInput = document.getElementById('filtro-cliente-nombre');
+    const filtro = filtroInput ? filtroInput.value.toLowerCase().trim() : '';
 
     if (!tbody) return;
 
     tbody.innerHTML = '';
 
-    if (clientes.length === 0) {
+    const clientesFiltrados = clientes.filter(c => c.nombre.toLowerCase().includes(filtro));
+
+    if (clientesFiltrados.length === 0) {
         sinClientes.style.display = 'block';
+        sinClientes.textContent = clientes.length === 0 ? 'No hay clientes aún. ¡Agrega uno nuevo!' : 'No se encontraron clientes con ese nombre.';
         return;
     }
 
     sinClientes.style.display = 'none';
 
-    clientes.forEach(cliente => {
+    clientesFiltrados.forEach(cliente => {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>#${cliente.id}</td>
@@ -400,25 +427,35 @@ function cargarCategorias() {
     const tbody = document.getElementById('tbody-categorias');
     const sinCategorias = document.getElementById('sin-categorias');
     const prodSelect = document.getElementById('prod-categoria');
+    const filtroInput = document.getElementById('filtro-categoria-nombre');
+    const filtro = filtroInput ? filtroInput.value.toLowerCase().trim() : '';
 
     if (!tbody) return;
 
     tbody.innerHTML = '';
 
-    if (categorias.length === 0) {
-        if (sinCategorias) sinCategorias.style.display = 'block';
-        if (prodSelect) prodSelect.innerHTML = '<option value="">-- Ninguna --</option>';
+    // Actualizar select de categorías en formulario de producto
+    if (prodSelect) {
+        if (categorias.length === 0) {
+            prodSelect.innerHTML = '<option value="">-- Ninguna --</option>';
+        } else {
+            prodSelect.innerHTML = '<option value="">-- Selecciona categoría --</option>' + categorias.map(c => `<option value="${escapeHtml(c.nombre)}">${escapeHtml(c.nombre)}</option>`).join('');
+        }
+    }
+
+    const categoriasFiltradas = categorias.filter(c => c.nombre.toLowerCase().includes(filtro));
+
+    if (categoriasFiltradas.length === 0) {
+        if (sinCategorias) {
+            sinCategorias.style.display = 'block';
+            sinCategorias.textContent = categorias.length === 0 ? 'No hay categorías aún. ¡Crea una nueva!' : 'No se encontraron categorías con ese nombre.';
+        }
         return;
     }
 
     if (sinCategorias) sinCategorias.style.display = 'none';
 
-    // Actualizar select de categorías en formulario de producto
-    if (prodSelect) {
-        prodSelect.innerHTML = '<option value="">-- Selecciona categoría --</option>' + categorias.map(c => `<option value="${escapeHtml(c.nombre)}">${escapeHtml(c.nombre)}</option>`).join('');
-    }
-
-    categorias.forEach(c => {
+    categoriasFiltradas.forEach(c => {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>#${c.id}</td>
@@ -728,22 +765,29 @@ function cargarCompras() {
     const compras = JSON.parse(localStorage.getItem('compras')) || [];
     const tbody = document.getElementById('tbody-compras');
     const sinCompras = document.getElementById('sin-compras');
+    const filtroInput = document.getElementById('filtro-compra-proveedor');
+    const filtro = filtroInput ? filtroInput.value.toLowerCase().trim() : '';
 
     if (!tbody) return;
 
     tbody.innerHTML = '';
 
-    if (compras.length === 0) {
-        if (sinCompras) sinCompras.style.display = 'block';
+    const comprasFiltradas = compras.filter(c => c.proveedor.toLowerCase().includes(filtro));
+
+    if (comprasFiltradas.length === 0) {
+        if (sinCompras) {
+            sinCompras.style.display = 'block';
+            sinCompras.textContent = compras.length === 0 ? 'No hay compras registradas.' : 'No se encontraron compras de ese proveedor.';
+        }
         return;
     }
 
     if (sinCompras) sinCompras.style.display = 'none';
 
     // Ordenar por fecha descendente
-    compras.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+    comprasFiltradas.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
 
-    compras.forEach(c => {
+    comprasFiltradas.forEach(c => {
         const row = document.createElement('tr');
         row.className = 'compra-row';
         row.setAttribute('data-proveedor', c.proveedor.toLowerCase());

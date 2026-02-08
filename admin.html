@@ -41,7 +41,11 @@
             <section id="productos" class="tab-content active">
                 <div class="tab-header">
                     <h2>Gestionar Productos</h2>
-                    <button class="btn-agregar" id="btn-nuevo-producto">+ Nuevo Producto</button>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <input type="text" id="filtro-producto-nombre" placeholder="Buscar por nombre..." style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        <input type="text" id="filtro-producto-categoria" placeholder="Buscar por categoría..." style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        <button class="btn-agregar" id="btn-nuevo-producto">+ Nuevo Producto</button>
+                    </div>
                 </div>
 
                 <div class="form-container" id="form-producto" style="display: none;">
@@ -114,7 +118,10 @@
             <section id="categorias" class="tab-content">
                 <div class="tab-header">
                     <h2>Gestionar Categorías</h2>
-                    <button class="btn-agregar" id="btn-nueva-categoria">+ Nueva Categoría</button>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="filtro-categoria-nombre" placeholder="Buscar categoría..." style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        <button class="btn-agregar" id="btn-nueva-categoria">+ Nueva Categoría</button>
+                    </div>
                 </div>
 
                 <div class="form-container" id="form-categoria" style="display: none;">
@@ -161,7 +168,10 @@
             <section id="clientes" class="tab-content">
                 <div class="tab-header">
                     <h2>Gestionar Clientes</h2>
-                    <button class="btn-agregar" id="btn-nuevo-cliente">+ Nuevo Cliente</button>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="filtro-cliente-nombre" placeholder="Buscar cliente..." style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        <button class="btn-agregar" id="btn-nuevo-cliente">+ Nuevo Cliente</button>
+                    </div>
                 </div>
 
                 <div class="form-container" id="form-cliente" style="display: none;">
@@ -292,7 +302,10 @@
             <section id="compras" class="tab-content">
                 <div class="tab-header">
                     <h2>Gestionar Compras</h2>
-                    <button class="btn-agregar" id="btn-nueva-compra">+ Nueva Compra</button>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="filtro-compra-proveedor" placeholder="Buscar proveedor..." style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        <button class="btn-agregar" id="btn-nueva-compra">+ Nueva Compra</button>
+                    </div>
                 </div>
 
                 <div class="form-container" id="form-compra" style="display: none;">
@@ -395,9 +408,7 @@
                 <div class="tab-header">
                     <h2>Gestionar Pedidos</h2>
                     <div class="filtros-pedidos" style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
-                        <input type="text" id="filtro-pedido-producto" placeholder="Buscar producto..." style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-                        <input type="text" id="filtro-pedido-categoria" placeholder="Buscar categoría..." style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-                        <select id="filtro-estado" class="filtro">
+                            <select id="filtro-estado" class="filtro">
                             <option value="">Todos los estados</option>
                             <option value="pendiente">Pendiente</option>
                             <option value="procesando">Procesando</option>
