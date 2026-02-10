@@ -194,8 +194,8 @@ th, td {
     margin-right: 25px;
 }
 
-span {
-    color: #9BCE21;
+span {/* Letra Boton Administracion */
+    color: #ffffff;
     font-size: 17px;
     font-weight: 600;
     display: block;
@@ -540,6 +540,7 @@ h2 {
 
 .btn-user {
     background-color: #9BCE21;
+
     color: #FFFFFF;
     border: none;
     padding: 10px 20px;
@@ -554,7 +555,7 @@ h2 {
 }
 
 .btn-user:hover {
-    background-color: #13462E;
+    background-color: #1a603f;
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
