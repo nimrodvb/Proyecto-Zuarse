@@ -948,6 +948,7 @@ function cargarPedidos() {
             <td>${pedido.cliente_nombre}</td>
             <td>${fecha}</td>
             <td>$${(pedido.total || 0).toFixed(2)}</td>
+            <td>${pedido.tipo_pago || 'N/A'}</td>
             <td>
                 <span class="badge badge-${estado}">${estado.charAt(0).toUpperCase() + estado.slice(1)}</span>
             </td>
@@ -989,6 +990,7 @@ function verDetallesPedido(pedidoId) {
         <p><strong>Cliente:</strong> ${pedido.cliente_nombre} (${pedido.cliente_email})</p>
         <p><strong>Fecha:</strong> ${new Date(pedido.fecha).toLocaleDateString('es-ES')} ${new Date(pedido.fecha).toLocaleTimeString('es-ES')}</p>
         <p><strong>Estado Actual:</strong> <span class="badge badge-${estadoSeleccionado}">${estadoSeleccionado.charAt(0).toUpperCase() + estadoSeleccionado.slice(1)}</span></p>
+        <p><strong>Tipo de Pago:</strong> ${pedido.tipo_pago || 'No especificado'}</p>
         <hr>
         <h4>Items:</h4>
         ${itemsHtml}
@@ -1084,6 +1086,7 @@ function generarPDF(pedido) {
             <p><strong>ID Pedido:</strong> ${pedido.id}</p>
             <p><strong>Fecha:</strong> ${new Date(pedido.fecha).toLocaleDateString('es-ES')} ${new Date(pedido.fecha).toLocaleTimeString('es-ES')}</p>
             <p><strong>Estado:</strong> ${(pedido.estado || 'pendiente').charAt(0).toUpperCase() + (pedido.estado || 'pendiente').slice(1)}</p>
+            <p><strong>Tipo de Pago:</strong> ${pedido.tipo_pago || 'No especificado'}</p>
         </div>
         
         <h3 style="color: #333; margin-top: 25px;">Información del Cliente</h3>

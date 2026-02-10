@@ -347,6 +347,6 @@ Se ha implementado un sistema completo de registro que permite a nuevos usuarios
 - [x] Registro de nuevos usuarios
 - [x] Historial de compras
 - [ ] Dashboard de ventas por fecha
-- [ ] Integración con pasarela de pagos
+- [x] Integración con pasarela de pagos
 - [ ] Notificaciones por email
 - [ ] Backup automático de datos

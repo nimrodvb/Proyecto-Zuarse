@@ -348,6 +348,8 @@ function realizarCompra(e) {
         }
     });
     
+    console.log('DEBUG: Final items array constructed in realizarCompra:', items);
+
     console.log('✅ [COMPRA] Items procesados:', items.length, 'Total:', total);
     
     if (items.length === 0) {
@@ -356,42 +358,49 @@ function realizarCompra(e) {
         return;
     }
     
-    // Crear pedido
-    const idPedido = generarIdPedido();
-    const pedido = {
-        id: idPedido,
-        cliente_email: sesion.email || sesion.usuario,
-        cliente_nombre: sesion.email ? sesion.email.split('@')[0] : sesion.usuario,
-        items: items,
-        total: parseFloat(total.toFixed(2)),
-        fecha: new Date().toISOString(),
-        estado: 'pendiente'
-    };
-    
-    console.log('📝 [COMPRA] Pedido creado:', pedido);
-    
-    try {
-        // Guardar pedido en localStorage
-        const pedidos = JSON.parse(localStorage.getItem('pedidos')) || [];
-        pedidos.push(pedido);
-        localStorage.setItem('pedidos', JSON.stringify(pedidos));
-        console.log('💾 [COMPRA] Pedido guardado en localStorage. Total de pedidos:', pedidos.length);
-    } catch (error) {
-        console.error('❌ [COMPRA] Error guardando pedido:', error);
-        alert('Error al guardar el pedido. Intenta de nuevo.');
-        return;
-    }
-    
-    // Mostrar confirmación
-    mostrarConfirmacionCompra(pedido);
-    
-    // Enviar email (sin bloquear)
-    enviarEmailPedido(pedido);
-    
-    // Limpiar carrito
-    vaciarCarrito();
-    
-    console.log('✨ [COMPRA] Proceso completado exitosamente');
+    // Mostrar pasarela de pago antes de procesar
+    mostrarPasarelaPago(total, function() {
+        // Crear pedido (ahora con estado 'pagado' ya que fue pagado con éxito)
+        const idPedido = generarIdPedido();
+        const pedido = {
+            id: idPedido,
+            cliente_email: sesion.email || sesion.usuario,
+            cliente_nombre: sesion.email ? sesion.email.split('@')[0] : sesion.usuario,
+            items: items,
+            total: parseFloat(total.toFixed(2)),
+            fecha: new Date().toISOString(),
+            estado: 'procesando',
+            estado_pago: 'PAGADO',
+            tipo_pago: 'Contado'
+        };
+        
+        console.log('DEBUG: Pedido object created before saving and PDF generation (script.js):', pedido);
+
+        console.log('📝 [COMPRA] Pedido creado:', pedido);
+        
+        try {
+            // Guardar pedido en localStorage
+            const pedidos = JSON.parse(localStorage.getItem('pedidos')) || [];
+            pedidos.push(pedido);
+            localStorage.setItem('pedidos', JSON.stringify(pedidos));
+            console.log('💾 [COMPRA] Pedido guardado en localStorage. Total de pedidos:', pedidos.length);
+        } catch (error) {
+            console.error('❌ [COMPRA] Error guardando pedido:', error);
+            alert('Error al guardar el pedido. Intenta de nuevo.');
+            return;
+        }
+        
+        // Mostrar confirmación
+        mostrarConfirmacionCompra(pedido);
+        
+        // Enviar email (sin bloquear)
+        enviarEmailPedido(pedido);
+        
+        // Limpiar carrito
+        vaciarCarrito();
+        
+        console.log('✨ [COMPRA] Proceso completado exitosamente');
+    });
 }
 
 function mostrarConfirmacionCompra(pedido) {
@@ -440,6 +449,9 @@ function generarPDFCliente(pedido) {
         `;
     });
     
+    console.log('DEBUG: Pedido object received by generarPDFCliente:', pedido);
+    console.log('DEBUG: Items array received by generarPDFCliente:', pedido.items);
+
     element.innerHTML = `
         <div style="text-align: center; margin-bottom: 30px;">
             <h1 style="color: #667eea; margin: 0;">ZUARSE</h1>
@@ -452,6 +464,7 @@ function generarPDFCliente(pedido) {
             <p><strong>ID Pedido:</strong> ${pedido.id}</p>
             <p><strong>Fecha:</strong> ${new Date(pedido.fecha).toLocaleDateString('es-ES')} ${new Date(pedido.fecha).toLocaleTimeString('es-ES')}</p>
             <p><strong>Estado:</strong> ${(pedido.estado || 'pendiente').charAt(0).toUpperCase() + (pedido.estado || 'pendiente').slice(1)}</p>
+            <p><strong>Tipo de Pago:</strong> ${pedido.tipo_pago || 'No especificado'}</p>
         </div>
         
         <h3 style="color: #333; margin-top: 25px;">Información del Cliente</h3>
@@ -481,6 +494,8 @@ function generarPDFCliente(pedido) {
         </div>
     `;
     
+    console.log('DEBUG: HTML content for PDF generation in generarPDFCliente:', element.innerHTML);
+
     const options = {
         margin: 10,
         filename: `pedido-${pedido.id}.pdf`,
@@ -523,7 +538,7 @@ function enviarEmailPedido(pedido) {
         order_date: new Date(pedido.fecha).toLocaleDateString('es-ES'),
         order_items: itemsText,
         order_total: pedido.total.toFixed(2),
-        order_status: 'Pendiente'
+        order_status: (pedido.estado || 'pendiente').charAt(0).toUpperCase() + (pedido.estado || 'pendiente').slice(1)
     };
     
     console.log('📧 [EMAIL] Enviando con parámetros:', templateParams);
@@ -551,4 +566,190 @@ function guardarPedido(pedido) {
         console.error('❌ [GUARDAR] Error al guardar pedido:', error);
         return false;
     }
+}
+
+// ==================== PASARELA DE PAGO SIMULADA ====================
+function inyectarEstilosPasarela() {
+    if (document.getElementById('estilos-pasarela')) return;
+    
+    const style = document.createElement('style');
+    style.id = 'estilos-pasarela';
+    style.textContent = `
+        .modal-pago-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            backdrop-filter: blur(5px);
+        }
+        .modal-pago {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .modal-pago h2 {
+            margin-top: 0;
+            color: #333;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 22px;
+        }
+        .form-group-pago {
+            margin-bottom: 15px;
+        }
+        .form-group-pago label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .form-group-pago input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        .form-group-pago input:focus {
+            border-color: #667eea;
+            outline: none;
+        }
+        .form-row-pago {
+            display: flex;
+            gap: 15px;
+        }
+        .btn-pagar {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 15px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn-pagar:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .btn-cancelar-pago {
+            width: 100%;
+            padding: 10px;
+            background: transparent;
+            color: #888;
+            border: none;
+            margin-top: 10px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-cancelar-pago:hover {
+            color: #555;
+        }
+        .total-pago {
+            text-align: center;
+            font-size: 28px;
+            font-weight: 800;
+            color: #333;
+            margin: 10px 0 20px 0;
+        }
+        .tarjetas-iconos {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 24px;
+            color: #666;
+            letter-spacing: 15px;
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+function mostrarPasarelaPago(total, callbackExito) {
+    inyectarEstilosPasarela();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-pago-overlay';
+    
+    overlay.innerHTML = `
+        <div class="modal-pago">
+            <h2>Pago Seguro</h2>
+            <div class="tarjetas-iconos">💳 💳 💳</div>
+            <div class="total-pago">$${total.toFixed(2)}</div>
+            
+            <form id="form-pago">
+                <div class="form-group-pago">
+                    <label>Titular de la tarjeta</label>
+                    <input type="text" placeholder="Nombre como aparece en la tarjeta" required>
+                </div>
+                <div class="form-group-pago">
+                    <label>Número de tarjeta</label>
+                    <input type="text" placeholder="0000 0000 0000 0000" maxlength="19" required>
+                </div>
+                <div class="form-row-pago">
+                    <div class="form-group-pago" style="flex: 1">
+                        <label>Vencimiento</label>
+                        <input type="text" placeholder="MM/AA" maxlength="5" required>
+                    </div>
+                    <div class="form-group-pago" style="flex: 1">
+                        <label>CVV</label>
+                        <input type="password" placeholder="123" maxlength="3" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn-pagar">Pagar Ahora</button>
+                <button type="button" class="btn-cancelar-pago">Cancelar</button>
+            </form>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    const form = overlay.querySelector('#form-pago');
+    const btnCancelar = overlay.querySelector('.btn-cancelar-pago');
+    const btnPagar = overlay.querySelector('.btn-pagar');
+
+    // Formateo simple de tarjeta
+    const inputTarjeta = overlay.querySelector('input[placeholder="0000 0000 0000 0000"]');
+    inputTarjeta.addEventListener('input', (e) => {
+        let value = e.target.value.replace(/\D/g, '');
+        value = value.replace(/(.{4})/g, '$1 ').trim();
+        e.target.value = value;
+    });
+
+    btnCancelar.addEventListener('click', () => {
+        overlay.remove();
+    });
+
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        
+        // Simulación de proceso de pago
+        btnPagar.innerHTML = 'Procesando pago... <span style="display:inline-block; animation: spin 1s linear infinite">↻</span>';
+        btnPagar.disabled = true;
+        btnPagar.style.opacity = '0.7';
+        
+        setTimeout(() => {
+            overlay.remove();
+            if (callbackExito) callbackExito();
+        }, 2000); // 2 segundos de delay simulado
+    });
 }
