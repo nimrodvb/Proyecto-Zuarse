@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', function() {
     configurarEventos();
 
     try { cargarProductos(); } catch(e) { console.error(e); }
+    try { cargarInventario(); } catch(e) { console.error(e); }
     try { cargarClientes(); } catch(e) { console.error(e); }
     try { cargarCategorias(); } catch(e) { console.error(e); }
     try { cargarProveedores(); } catch(e) { console.error(e); }
@@ -47,6 +48,8 @@ function configurarEventos() {
     const filtroProdCategoria = document.getElementById('filtro-producto-categoria');
     if (filtroProdNombre) filtroProdNombre.addEventListener('input', cargarProductos);
     if (filtroProdCategoria) filtroProdCategoria.addEventListener('input', cargarProductos);
+    const filtroInventarioCat = document.getElementById('filtro-inventario-categoria');
+    if (filtroInventarioCat) filtroInventarioCat.addEventListener('change', cargarInventario);
 
     // Clientes
     const btnNuevoCliente = document.getElementById('btn-nuevo-cliente');
@@ -169,6 +172,7 @@ function guardarProducto(e) {
     localStorage.setItem('productos', JSON.stringify(productos));
     ocultarFormProducto();
     cargarProductos();
+    cargarInventario();
     alert('Producto guardado exitosamente');
 }
 
@@ -242,6 +246,58 @@ function eliminarProducto(id) {
     productos = productos.filter(p => p.id !== id);
     localStorage.setItem('productos', JSON.stringify(productos));
     cargarProductos();
+    cargarInventario();
+}
+
+// ==================== INVENTARIO ====================
+function cargarInventario() {
+    const productos = JSON.parse(localStorage.getItem('productos')) || [];
+    const tbody = document.getElementById('tbody-inventario');
+    const sinInventario = document.getElementById('sin-inventario');
+    const filtroCat = document.getElementById('filtro-inventario-categoria');
+    const categoriaSeleccionada = filtroCat ? filtroCat.value : '';
+
+    if (!tbody) return;
+
+    tbody.innerHTML = '';
+
+    // Filtrar por categoría si hay una seleccionada
+    let productosFiltrados = productos;
+    if (categoriaSeleccionada) {
+        productosFiltrados = productos.filter(p => p.categoria === categoriaSeleccionada);
+    }
+
+    if (productosFiltrados.length === 0) {
+        if (sinInventario) {
+            sinInventario.style.display = 'block';
+            sinInventario.textContent = productos.length === 0 ? 'No hay productos para mostrar en el inventario.' : 'No hay productos en esta categoría.';
+        }
+        return;
+    }
+
+    if (sinInventario) sinInventario.style.display = 'none';
+
+    // Ordenar por stock más bajo primero para priorizar
+    productosFiltrados.sort((a, b) => (a.stock || 0) - (b.stock || 0));
+
+    productosFiltrados.forEach(producto => {
+        const row = document.createElement('tr');
+        const stock = producto.stock || 0;
+        
+        let stockClass = '';
+        if (stock === 0) {
+            stockClass = 'stock-agotado'; // Para estilizar en rojo
+        } else if (stock > 0 && stock <= 10) {
+            stockClass = 'stock-bajo'; // Para estilizar en naranja
+        }
+
+        row.innerHTML = `
+            <td>${escapeHtml(producto.nombre)}</td>
+            <td>${escapeHtml(producto.categoria) || 'General'}</td>
+            <td><span class="stock-badge ${stockClass}">${stock}</span></td>
+        `;
+        tbody.appendChild(row);
+    });
 }
 
 // ==================== CLIENTES ====================
@@ -429,6 +485,7 @@ function cargarCategorias() {
     const tbody = document.getElementById('tbody-categorias');
     const sinCategorias = document.getElementById('sin-categorias');
     const prodSelect = document.getElementById('prod-categoria');
+    const filtroInventarioSelect = document.getElementById('filtro-inventario-categoria');
     const filtroInput = document.getElementById('filtro-categoria-nombre');
     const filtro = filtroInput ? filtroInput.value.toLowerCase().trim() : '';
 
@@ -443,6 +500,17 @@ function cargarCategorias() {
         } else {
             prodSelect.innerHTML = '<option value="">-- Selecciona categoría --</option>' + categorias.map(c => `<option value="${escapeHtml(c.nombre)}">${escapeHtml(c.nombre)}</option>`).join('');
         }
+    }
+
+    // Actualizar select de filtro inventario
+    if (filtroInventarioSelect) {
+        const valorActual = filtroInventarioSelect.value;
+        if (categorias.length === 0) {
+            filtroInventarioSelect.innerHTML = '<option value="">Todas las categorías</option>';
+        } else {
+            filtroInventarioSelect.innerHTML = '<option value="">Todas las categorías</option>' + categorias.map(c => `<option value="${escapeHtml(c.nombre)}">${escapeHtml(c.nombre)}</option>`).join('');
+        }
+        if (valorActual) filtroInventarioSelect.value = valorActual;
     }
 
     const categoriasFiltradas = categorias.filter(c => c.nombre.toLowerCase().includes(filtro));
