@@ -77,6 +77,8 @@ function configurarEventos() {
     if (btnNuevoProveedor) btnNuevoProveedor.addEventListener('click', mostrarFormProveedor);
     if (cancelarProveedor) cancelarProveedor.addEventListener('click', ocultarFormProveedor);
     if (formularioProveedor) formularioProveedor.addEventListener('submit', guardarProveedor);
+    const filtroProveedorNombre = document.getElementById('filtro-proveedor-nombre');
+    if (filtroProveedorNombre) filtroProveedorNombre.addEventListener('input', cargarProveedores);
 
     // Compras
     const btnNuevaCompra = document.getElementById('btn-nueva-compra');
@@ -613,19 +615,26 @@ function cargarProveedores() {
     const proveedores = JSON.parse(localStorage.getItem('proveedores')) || [];
     const tbody = document.getElementById('tbody-proveedores');
     const sinProveedores = document.getElementById('sin-proveedores');
+    const filtroInput = document.getElementById('filtro-proveedor-nombre');
+    const filtro = filtroInput ? filtroInput.value.toLowerCase().trim() : '';
 
     if (!tbody) return;
 
     tbody.innerHTML = '';
 
-    if (proveedores.length === 0) {
-        if (sinProveedores) sinProveedores.style.display = 'block';
+    const proveedoresFiltrados = proveedores.filter(p => p.nombre.toLowerCase().includes(filtro));
+
+    if (proveedoresFiltrados.length === 0) {
+        if (sinProveedores) {
+            sinProveedores.style.display = 'block';
+            sinProveedores.textContent = proveedores.length === 0 ? 'No hay proveedores aún. ¡Crea uno nuevo!' : 'No se encontraron proveedores con ese nombre.';
+        }
         return;
     }
 
     if (sinProveedores) sinProveedores.style.display = 'none';
 
-    proveedores.forEach(prov => {
+    proveedoresFiltrados.forEach(prov => {
         const row = document.createElement('tr');
         row.className = 'proveedor-row';
         row.setAttribute('data-nombre', prov.nombre.toLowerCase());
