@@ -691,3 +691,25 @@ tbody tr:hover {
 .proveedor-row:hover {
     background: #f9f9f9;
 }
+
+/* ==================== INVENTARIO ==================== */
+/* Estilos para las insignias de stock en la tabla de inventario */
+.stock-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    color: white;
+    background-color: #4caf50; /* Verde por defecto para stock normal */
+}
+
+/* Estilo para stock bajo (ej. 1-10 unidades) */
+.stock-badge.stock-bajo {
+    background-color: #ff9800; /* Naranja */
+}
+
+/* Estilo para stock agotado (0 unidades) */
+.stock-badge.stock-agotado {
+    background-color: #f44336; /* Rojo */
+}

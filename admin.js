@@ -48,6 +48,7 @@ function configurarEventos() {
     const filtroProdCategoria = document.getElementById('filtro-producto-categoria');
     if (filtroProdNombre) filtroProdNombre.addEventListener('input', cargarProductos);
     if (filtroProdCategoria) filtroProdCategoria.addEventListener('input', cargarProductos);
+    // Filtro de inventario por categoría
     const filtroInventarioCat = document.getElementById('filtro-inventario-categoria');
     if (filtroInventarioCat) filtroInventarioCat.addEventListener('change', cargarInventario);
 
@@ -172,6 +173,7 @@ function guardarProducto(e) {
     localStorage.setItem('productos', JSON.stringify(productos));
     ocultarFormProducto();
     cargarProductos();
+    // Recargar el inventario para reflejar los cambios en el stock o el nuevo producto
     cargarInventario();
     alert('Producto guardado exitosamente');
 }
@@ -246,10 +248,23 @@ function eliminarProducto(id) {
     productos = productos.filter(p => p.id !== id);
     localStorage.setItem('productos', JSON.stringify(productos));
     cargarProductos();
+    // Recargar el inventario para reflejar el producto eliminado
     cargarInventario();
 }
 
 // ==================== INVENTARIO ====================
+/**
+ * Módulo de Inventario.
+ * Proporciona una vista de solo lectura del stock de los productos.
+ * Permite filtrar por categoría y ordena los productos por la cantidad de stock más baja primero.
+ */
+
+/**
+ * Carga y muestra los productos en la tabla de inventario.
+ * Lee los productos del localStorage, aplica el filtro de categoría seleccionado,
+ * ordena los productos por stock ascendente (de menor a mayor) y los renderiza en la tabla.
+ * Aplica estilos especiales para productos con stock bajo o agotado.
+ */
 function cargarInventario() {
     const productos = JSON.parse(localStorage.getItem('productos')) || [];
     const tbody = document.getElementById('tbody-inventario');
@@ -502,6 +517,7 @@ function cargarCategorias() {
         }
     }
 
+    // Actualiza el menú desplegable de filtro en la pestaña de Inventario
     // Actualizar select de filtro inventario
     if (filtroInventarioSelect) {
         const valorActual = filtroInventarioSelect.value;
