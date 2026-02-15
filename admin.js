@@ -889,7 +889,7 @@ function cargarCompras() {
             <td>${escapeHtml(c.proveedor)}</td>
             <td>${new Date(c.fecha).toLocaleDateString()}</td>
             <td>${escapeHtml(c.productos)}</td>
-            <td>$${(c.total || 0).toFixed(2)}</td>
+            <td>₡${(c.total || 0).toFixed(2)}</td>
             <td>
                 <button class="btn-editar" onclick="editarCompra(${c.id})">Editar</button>
                 <button class="btn-eliminar" onclick="eliminarCompra(${c.id})">Eliminar</button>
@@ -967,7 +967,7 @@ function agregarProductoACompra() {
     }
 
     const subtotal = cantidad * precio;
-    const itemTexto = `${cantidad} x ${prodNombre} @ $${precio.toFixed(2)} = $${subtotal.toFixed(2)}`;
+    const itemTexto = `${cantidad} - ${prodNombre} - ₡${precio.toFixed(2)} - ₡${subtotal.toFixed(2)}`;
 
     // Actualizar listado de productos
     const productosTextarea = document.getElementById('compra-productos');
