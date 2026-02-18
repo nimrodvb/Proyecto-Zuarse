@@ -28,7 +28,8 @@
         <div class="admin-content">
             <!-- NAVEGACIÓN DE PESTAÑAS -->
             <nav class="tabs-nav">
-                <button class="tab-btn active" data-tab="productos">Productos</button>
+                <button class="tab-btn active" data-tab="reportes">Reportes</button>
+                <button class="tab-btn" data-tab="productos">Productos</button>
                 <button class="tab-btn" data-tab="inventario">Inventario</button>
                 <button class="tab-btn" data-tab="categorias">Categorías</button>
                 <button class="tab-btn" data-tab="clientes">Clientes</button>
@@ -38,8 +39,44 @@
                 <button class="tab-btn" data-tab="notificaciones">Notificaciones</button>
             </nav>
 
+            <!-- TAB: DASHBOARD -->
+            <div id="reportes" class="tab-content active">
+                <div class="reportes-grid">
+                    <div class="reporte-card">
+                        <h3>Ingresos Totales</h3>
+                        <div class="numero" id="dash-total-ingresos">$0.00</div>
+                    </div>
+                    <div class="reporte-card">
+                        <h3>Pedidos Totales</h3>
+                        <div class="numero" id="dash-total-pedidos">0</div>
+                    </div>
+                    <div class="reporte-card">
+                        <h3>Productos</h3>
+                        <div class="numero" id="dash-total-productos">0</div>
+                    </div>
+                    <div class="reporte-card">
+                        <h3>Clientes</h3>
+                        <div class="numero" id="dash-total-clientes">0</div>
+                    </div>
+                </div>
+            
+                <div class="dashboard-charts-row">
+                    <div class="chart-container">
+                        <h3>Ventas Últimos 7 Días</h3>
+                        <div id="grafico-ventas-container"></div>
+                    </div>
+                    <div class="chart-container">
+                        <h3>Alerta de Stock Bajo</h3>
+                        <table class="simple-table">
+                            <thead><tr><th>Producto</th><th>Stock</th></tr></thead>
+                            <tbody id="tbody-dash-bajo-stock"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
             <!-- TAB: PRODUCTOS -->
-            <section id="productos" class="tab-content active">
+            <section id="productos" class="tab-content">
                 <div class="tab-header">
                     <h2>Gestionar Productos</h2>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">

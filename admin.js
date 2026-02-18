@@ -28,6 +28,7 @@ document.addEventListener('DOMContentLoaded', function() {
     try { cargarCompras(); } catch(e) { console.error(e); }
     try { cargarPedidos(); } catch(e) { console.error(e); }
     try { cargarNotificaciones(); } catch(e) { console.error(e); }
+    try { cargarDashboard(); } catch(e) { console.error(e); }
 });
 
 // ==================== CONFIGURAR EVENTOS ====================
@@ -1259,4 +1260,98 @@ function enviarPedidoPorEmail(pedidoId) {
             alert('❌ Error al enviar el email. Por favor, intenta de nuevo.\n\nNota: Asegúrate de configurar EmailJS en config.js');
             console.error('Error:', error);
         });
+}
+
+// ==================== DASHBOARD & MÉTRICAS ====================
+function cargarDashboard() {
+    const pedidos = JSON.parse(localStorage.getItem('pedidos')) || [];
+    const productos = JSON.parse(localStorage.getItem('productos')) || [];
+    const clientes = JSON.parse(localStorage.getItem('clientes')) || [];
+
+    // 1. Calcular Totales
+    // Sumar solo pedidos no cancelados
+    const totalIngresos = pedidos
+        .filter(p => p.estado !== 'cancelado')
+        .reduce((sum, p) => sum + (p.total || 0), 0);
+    
+    const totalPedidos = pedidos.length;
+    const totalProductos = productos.length;
+    const totalClientes = clientes.length;
+
+    // 2. Actualizar Tarjetas (Cards)
+    const elIngresos = document.getElementById('dash-total-ingresos');
+    const elPedidos = document.getElementById('dash-total-pedidos');
+    const elProductos = document.getElementById('dash-total-productos');
+    const elClientes = document.getElementById('dash-total-clientes');
+
+    if (elIngresos) elIngresos.textContent = `$${totalIngresos.toFixed(2)}`;
+    if (elPedidos) elPedidos.textContent = totalPedidos;
+    if (elProductos) elProductos.textContent = totalProductos;
+    if (elClientes) elClientes.textContent = totalClientes;
+
+    // 3. Tabla de Productos con Bajo Stock (Top 5)
+    const tbodyBajoStock = document.getElementById('tbody-dash-bajo-stock');
+    if (tbodyBajoStock) {
+        tbodyBajoStock.innerHTML = '';
+        const bajoStock = productos
+            .sort((a, b) => (a.stock || 0) - (b.stock || 0))
+            .slice(0, 5);
+        
+        bajoStock.forEach(p => {
+            const row = document.createElement('tr');
+            const stockClass = p.stock === 0 ? 'stock-agotado' : (p.stock <= 10 ? 'stock-bajo' : '');
+            row.innerHTML = `
+                <td>${escapeHtml(p.nombre)}</td>
+                <td><span class="stock-badge ${stockClass}">${p.stock}</span></td>
+            `;
+            tbodyBajoStock.appendChild(row);
+        });
+    }
+
+    // 4. Gráfico simple de ventas (últimos 7 días)
+    renderizarGraficoVentas(pedidos);
+}
+
+function renderizarGraficoVentas(pedidos) {
+    const container = document.getElementById('grafico-ventas-container');
+    if (!container) return;
+
+    // Agrupar ventas por fecha (últimos 7 días)
+    const ventasPorDia = {};
+    const hoy = new Date();
+    const dias = [];
+
+    for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(hoy.getDate() - i);
+        const key = d.toISOString().split('T')[0]; // YYYY-MM-DD
+        const label = d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
+        ventasPorDia[key] = 0;
+        dias.push({ key, label });
+    }
+
+    pedidos.forEach(p => {
+        if (p.estado !== 'cancelado') {
+            const fechaP = new Date(p.fecha).toISOString().split('T')[0];
+            if (ventasPorDia[fechaP] !== undefined) {
+                ventasPorDia[fechaP] += (p.total || 0);
+            }
+        }
+    });
+
+    const maxVenta = Math.max(...Object.values(ventasPorDia), 100); // Mínimo 100 para escala
+
+    let html = '<div class="chart-bars">';
+    dias.forEach(dia => {
+        const total = ventasPorDia[dia.key];
+        const altura = Math.max((total / maxVenta) * 100, 2); // Mínimo 2% altura
+        html += `
+            <div class="chart-bar-group">
+                <div class="chart-bar" style="height: ${altura}%" title="$${total.toFixed(2)}"></div>
+                <div class="chart-label">${dia.label}</div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    container.innerHTML = html;
 }
