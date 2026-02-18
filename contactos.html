@@ -5,6 +5,262 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
     <link rel="stylesheet" href="style.css">
+
+<style>
+  /* ── VARIABLES DE COLOR ──
+     Puedes cambiar estos valores para que coincidan con tu página */
+  :root {
+    --crema:       #f5f0e8;
+    --tinta:       #1a1612;
+    --oxido:       #9BCE21;
+    --oxido-claro: #13462E;
+    --piedra:      #8a7f72;
+    --borde:       #d6cfc4;
+    --blanco:      #ffffff;
+  }
+
+  /* ── BOTÓN PARA ABRIR EL MODAL ── */
+  .btn-abrir {
+    background: var(--oxido);
+    color: var(--blanco);
+    border: none;
+    padding: 0.875rem 2.5rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: background 0.25s;
+    margin-top: 1.5rem;
+  }
+
+  /* Efecto de brillo al pasar el cursor */
+  .btn-abrir::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0.15);
+    transform: translateX(-100%) skewX(-20deg);
+    transition: transform 0.4s ease;
+  }
+
+  .btn-abrir:hover { background: var(--oxido-claro); }
+  .btn-abrir:hover::after { transform: translateX(130%) skewX(-20deg); }
+
+  /* ── OVERLAY (fondo oscuro detrás del modal) ──
+     Cubre toda la pantalla, oculto por defecto */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(26,22,18,0.6);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.35s ease;
+    z-index: 100;
+  }
+
+  /* Se hace visible al agregarle la clase "active" */
+  .overlay.active {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  /* ── VENTANA EMERGENTE (MODAL) ── */
+  .modal {
+    background: var(--blanco);
+    width: 100%;
+    max-width: 520px;
+    position: relative;
+    padding: 3rem 3rem 2.5rem;
+    transform: translateY(30px) scale(0.97); /* Posición inicial de la animación */
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 40px 80px rgba(26,22,18,0.25);
+  }
+
+  /* Posición final cuando el modal está activo */
+  .overlay.active .modal {
+    transform: translateY(0) scale(1);
+  }
+
+  /* Detalle decorativo: triángulo en la esquina superior izquierda */
+  .modal::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 80px; height: 80px;
+    background: var(--oxido);
+    clip-path: polygon(0 0, 100% 0, 0 100%);
+    opacity: 0.12;
+  }
+
+  /* ── ENCABEZADO DEL MODAL ── */
+  .modal-encabezado { margin-bottom: 2rem; }
+
+  .modal-encabezado .etiqueta {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--oxido);
+    margin-bottom: 0.4rem;
+  }
+
+  .modal-encabezado h2 {
+    font-size: 2rem;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: var(--tinta);
+  }
+
+  /* ── BOTÓN CERRAR (X) en la esquina superior derecha ── */
+  .btn-cerrar {
+    position: absolute;
+    top: 1.25rem; right: 1.25rem;
+    background: none;
+    border: 1px solid var(--borde);
+    width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    color: var(--piedra);
+    font-size: 1.1rem;
+    transition: border-color 0.2s, color 0.2s, background 0.2s;
+  }
+
+  .btn-cerrar:hover {
+    border-color: var(--tinta);
+    color: var(--tinta);
+    background: var(--crema);
+  }
+
+  /* ── FILA DE DOS COLUMNAS para Nombre y Apellido ── */
+  .fila-campos {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    width: 100%;
+  }
+
+  /* ── CAMPO INDIVIDUAL (label + input + error) ── */
+  .campo {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 1.25rem;
+  }
+
+  .campo label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--piedra);
+    margin-bottom: 0.45rem;
+  }
+
+  /* Texto "(opcional)" dentro del label */
+  .campo label .opcional {
+    font-weight: 300;
+    font-style: italic;
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 0.72rem;
+    color: var(--borde);
+    margin-left: 0.3rem;
+  }
+
+  /* Estilo base del input */
+  .campo input {
+    border: 1px solid var(--borde);
+    background: var(--crema);
+    padding: 0.75rem 1rem;
+    font-size: 0.95rem;
+    color: var(--tinta);
+    outline: none;
+    width: 100%;
+    transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+  }
+
+  .campo input::placeholder { color: #c0b9ae; }
+
+  /* Estilo cuando el campo está enfocado */
+  .campo input:focus {
+    border-color: var(--oxido);
+    background: var(--blanco);
+    box-shadow: 0 0 0 3px rgba(192,85,42,0.1);
+  }
+
+  /* Estilo cuando el campo tiene error */
+  .campo input.error {
+    border-color: #d0453a;
+    background: #fff8f7;
+  }
+
+  /* Mensaje de error (oculto por defecto, aparece con la clase "tiene-error") */
+  .campo .msg-error {
+    font-size: 0.72rem;
+    color: #d0453a;
+    margin-top: 0.3rem;
+    display: none;
+  }
+
+  .campo.tiene-error .msg-error { display: block; }
+
+  /* ── BOTÓN DE ENVIAR ── */
+  .btn-enviar {
+    width: 100%;
+    background: var(--tinta);
+    color: var(--blanco);
+    border: none;
+    padding: 1rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.25s;
+    margin-top: 0.5rem;
+  }
+
+  .btn-enviar:hover { background: var(--oxido); }
+
+  /* ── MENSAJE DE ÉXITO (se muestra al enviar correctamente) ── */
+  .msg-exito {
+    display: none;
+    text-align: center;
+    padding: 2rem 0 1rem;
+  }
+
+  .msg-exito .palomita {
+    width: 56px; height: 56px;
+    background: var(--oxido);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 1.25rem;
+    font-size: 1.5rem;
+    color: white;
+  }
+
+  .msg-exito h3 {
+    font-size: 1.6rem;
+    color: var(--tinta);
+    margin-bottom: 0.5rem;
+  }
+
+  .msg-exito p { color: var(--piedra); font-size: 0.9rem; }
+
+  /* ── RESPONSIVO: en móvil los campos se apilan ── */
+  @media (max-width: 500px) {
+    .modal { padding: 2rem 1.5rem; }
+    .fila-campos { grid-template-columns: 1fr; }
+  }
+</style>
+
 </head>
 <body>
   
@@ -37,25 +293,168 @@
             </p>. </p>
             </p>Atendemos pedidos y consultas de forma rápida, segura y confiable.
             </p>
-           
+
+<!-- ============================================
+     Boton Formulario>
+============================================ -->
+
+<!-- Botón que abre la ventana emergente -->
+<button class="btn-abrir" onclick="abrirModal()">LLenar formulario</button>
+
+<!-- Overlay + Modal  -->
+<div class="overlay" id="overlay" onclick="manejarClicOverlay(event)">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="titulo-modal">
+
+    <!-- Botón de cerrar -->
+    <button class="btn-cerrar" onclick="cerrarModal()" aria-label="Cerrar">✕</button>
+
+    <!-- Contenido del formulario -->
+    <div id="contenido-form">
+      <div class="modal-encabezado">
+        <p class="etiqueta">Formulario de contacto</p>
+        <h2 id="titulo-modal">Escríbenos,<br><em>con gusto te atendemos.</em></h2>
+      </div>
+
+      <!-- novalidate desactiva la validación del navegador para usar la nuestra -->
+      <form id="formulario-contacto" novalidate>
+
+        <!-- Fila: Nombre y Apellido lado a lado -->
+        <div class="fila-campos">
+          <div class="campo" id="campo-nombre">
+            <label for="nombre">Nombre</label>
+            <input type="text" id="nombre" placeholder="Javier" autocomplete="given-name"/>
+            <span class="msg-error">Por favor ingresa tu nombre.</span>
+          </div>
+          <div class="campo" id="campo-apellido">
+            <label for="apellido">Apellido</label>
+            <input type="text" id="apellido" placeholder="Vargas" autocomplete="family-name"/>
+            <span class="msg-error">Por favor ingresa tu apellido.</span>
+          </div>
+        </div>
+
+        <!-- Correo electrónico -->
+        <div class="campo" id="campo-correo">
+          <label for="correo">Correo electrónico</label>
+          <input type="email" id="correo" placeholder="ana@ejemplo.com" autocomplete="email"/>
+          <span class="msg-error">Por favor ingresa un correo válido.</span>
+        </div>
+
+        <!-- Teléfono (opcional) -->
+        <div class="campo" id="campo-telefono">
+          <label for="telefono">Teléfono <span class="opcional">opcional</span></label>
+          <input type="tel" id="telefono" placeholder="+506 8888 0000" autocomplete="tel"/>
+          <span class="msg-error">Formato de teléfono inválido.</span>
+        </div>
+
+        <button type="submit" class="btn-enviar">Enviar mensaje</button>
+      </form>
+    </div>
+
+    <!-- Mensaje de éxito (se muestra al enviar, oculta el formulario) -->
+    <div class="msg-exito" id="msg-exito">
+      <div class="palomita">✓</div>
+      <h3>¡Mensaje enviado!</h3>
+      <p>Gracias por contactarnos. Te responderemos pronto.</p>
+    </div>
+
+  </div>
+</div>
+
+
+
+<script>
+  const overlay = document.getElementById('overlay');
+
+  /* Abre el modal y enfoca el primer campo */
+  function abrirModal() {
+    overlay.classList.add('active');
+    document.getElementById('nombre').focus();
+  }
+
+  /* Cierra el modal */
+  function cerrarModal() {
+    overlay.classList.remove('active');
+  }
+
+  /* Cierra si el clic fue en el fondo oscuro, no dentro del modal */
+  function manejarClicOverlay(e) {
+    if (e.target === overlay) cerrarModal();
+  }
+
+  /* Cierra con la tecla Escape */
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') cerrarModal();
+  });
+
+  /* ── VALIDACIÓN AL ENVIAR ── */
+  document.getElementById('formulario-contacto').addEventListener('submit', function(e) {
+    e.preventDefault();
+    let valido = true;
+
+    const nombre   = document.getElementById('nombre');
+    const apellido = document.getElementById('apellido');
+    const correo   = document.getElementById('correo');
+    const telefono = document.getElementById('telefono');
+
+    marcarError('campo-nombre',   nombre,   !nombre.value.trim());
+    if (!nombre.value.trim()) valido = false;
+
+    marcarError('campo-apellido', apellido, !apellido.value.trim());
+    if (!apellido.value.trim()) valido = false;
+
+    const correoValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo.value.trim());
+    marcarError('campo-correo', correo, !correoValido);
+    if (!correoValido) valido = false;
+
+    /* Teléfono solo se valida si el usuario escribió algo */
+    if (telefono.value.trim()) {
+      const telValido = /^[+\d\s\-().]{7,20}$/.test(telefono.value.trim());
+      marcarError('campo-telefono', telefono, !telValido);
+      if (!telValido) valido = false;
+    } else {
+      marcarError('campo-telefono', telefono, false);
+    }
+
+    if (valido) mostrarExito();
+  });
+
+  /* Aplica o quita el estilo de error en un campo */
+  function marcarError(campoId, input, tieneError) {
+    document.getElementById(campoId).classList.toggle('tiene-error', tieneError);
+    input.classList.toggle('error', tieneError);
+  }
+
+  /* Muestra el mensaje de éxito y reinicia el formulario después de unos segundos */
+  function mostrarExito() {
+    document.getElementById('contenido-form').style.display = 'none';
+    const msg = document.getElementById('msg-exito');
+    msg.style.display = 'block';
+
+    setTimeout(cerrarModal, 2800);
+    setTimeout(function() {
+      document.getElementById('contenido-form').style.display = 'block';
+      msg.style.display = 'none';
+      document.getElementById('formulario-contacto').reset();
+      ['campo-nombre','campo-apellido','campo-correo','campo-telefono'].forEach(function(id) {
+        document.getElementById(id).classList.remove('tiene-error');
+      });
+    }, 3200);
+  }
+</script>
+
         </div>
         <div class="headee-img">
             <img src="https://iili.io/fbZXnLl.md.png" alt="">
-        </div>
+        </div>       
     </div>
-
-   
-
     </header>
+    
     
 
     <main class="products container">
 
         <h2>Formulario</h2>
 
-      
-
-    
 
     <footer class="footer">
         <div class="footer-content container">
