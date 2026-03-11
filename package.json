@@ -1,0 +1,26 @@
+{
+  "name": "zuarse-web",
+  "version": "1.0.0",
+  "description": "ZUARSE es una aplicación web completa para la gestión de una tienda en línea, desarrollada íntegramente en el lado del cliente (frontend) utilizando HTML, CSS y JavaScript. No requiere un backend ni una base de datos, ya que toda la información se persiste en el `localStorage` del navegador.",
+  "main": "admin.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nimrodvb/Proyecto-Zuarse.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/nimrodvb/Proyecto-Zuarse/issues"
+  },
+  "homepage": "https://github.com/nimrodvb/Proyecto-Zuarse#readme",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "mssql": "^12.2.0"
+  }
+}

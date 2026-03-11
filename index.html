@@ -90,7 +90,6 @@
             <img src="images/bag.png" alt="">
         </div>
     </div>
-
    
 
     </header>
@@ -312,6 +311,32 @@
             </div>
         </div>
     </section>
+
+<!-- Botón que al hacer clic ejecuta la función probarConexion() -->
+<button onclick="probarConexion()">Probar conexión SQL</button>
+
+<!-- Área donde se mostrará el resultado de la consulta -->
+<pre id="resultado"></pre>
+
+<script>
+  // Función asíncrona para probar la conexión con el backend
+  async function probarConexion() {
+    try {
+      // Hace una solicitud a la ruta /api/prueba del servidor
+      const res = await fetch('/api/prueba');
+
+      // Convierte la respuesta a formato JSON
+      const data = await res.json();
+
+      // Muestra el resultado en pantalla con formato bonito
+      document.getElementById('resultado').textContent =
+        JSON.stringify(data, null, 2);
+    } catch (error) {
+      // Si ocurre un error, muestra mensaje de fallo
+      document.getElementById('resultado').textContent = 'Error de conexión';
+    }
+  }
+</script>
 
     <footer class="footer">
         <div class="footer-content container">
