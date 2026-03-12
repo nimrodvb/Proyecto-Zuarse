@@ -43,7 +43,7 @@ body {
 .login-header {
     background: linear-gradient(135deg, #9BCE21 0%, #13462E 100%);
     color: white;
-    padding: 40px 30px;
+    padding: 40px;
     text-align: center;
 }
 
@@ -80,18 +80,18 @@ body {
 }
 
 .tab-login:hover {
-    color: #667eea;
+    color: #13462E;
 }
 
 .tab-login.active {
-    color: #667eea;
-    border-bottom-color: #667eea;
+    color: #13462E;
+    border-bottom-color: #9BCE21;
 }
 
 /* FORMULARIOS */
 .form-login {
     display: none;
-    padding: 40px 30px;
+    padding: 40px;
     animation: fadeIn 0.3s ease;
 }
 
@@ -111,7 +111,7 @@ body {
 .form-login h2 {
     font-size: 24px;
     color: #333;
-    margin-bottom: 30px;
+    margin-bottom: 35px;
     text-align: center;
 }
 
@@ -121,15 +121,15 @@ body {
 
 .form-group label {
     display: block;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
     color: #333;
     font-weight: 600;
     font-size: 14px;
 }
 
-.form-group input {
+.form-group input, .form-group select {
     width: 100%;
-    padding: 12px 15px;
+    padding: 14px 18px;
     border: 2px solid #e0e0e0;
     border-radius: 6px;
     font-size: 14px;
@@ -137,10 +137,10 @@ body {
     font-family: inherit;
 }
 
-.form-group input:focus {
+.form-group input:focus, .form-group select:focus {
     outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+    border-color: #9BCE21;
+    box-shadow: 0 0 0 4px rgba(155, 206, 33, 0.2);
 }
 
 .btn-login {
@@ -229,14 +229,14 @@ body {
 }
 
 .link-tienda {
-    color: #667eea;
+    color: #13462E;
     text-decoration: none;
     font-weight: 600;
     transition: color 0.3s ease;
 }
 
 .link-tienda:hover {
-    color: #764ba2;
+    color: #9BCE21;
     text-decoration: underline;
 }
 
@@ -314,7 +314,7 @@ body {
 }
 /* ESTILOS PARA RECUPERACIÓN DE CONTRASEÑA */
 .paso-recuperacion {
-    padding: 40px 30px;
+    padding: 40px;
     animation: fadeIn 0.3s ease;
 }
 
@@ -335,7 +335,7 @@ body {
 #pregunta-texto {
     background: #f5f7ff;
     padding: 20px;
-    border-left: 4px solid #667eea;
+    border-left: 4px solid #9BCE21;
     margin-bottom: 20px;
     border-radius: 5px;
     color: #333;
@@ -379,7 +379,7 @@ body {
 }
 
 .link-recuperar {
-    color: #667eea;
+    color: #13462E;
     text-decoration: none;
     font-weight: 600;
     transition: color 0.3s ease;
@@ -389,6 +389,11 @@ body {
 }
 
 .link-recuperar:hover {
-    color: #764ba2;
+    color: #9BCE21;
     text-decoration: underline;
+}
+
+.login-form {
+    padding: 40px;
+    animation: fadeIn 0.3s ease;
 }
