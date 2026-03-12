@@ -12,72 +12,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Obtiene el formulario por su ID
-const formularioContacto = document.getElementById("formulario-contacto");
-
-// Detecta cuando se presiona el botón Enviar
-formularioContacto.addEventListener("submit", async function (e) {
-
-  // Evita que la página se recargue
-  e.preventDefault();
-
-  // Captura valores escritos por el usuario
-  const nombre = document.getElementById("nombre").value.trim();
-  const apellido = document.getElementById("apellido").value.trim();
-  const correo = document.getElementById("correo").value.trim();
-  const telefono = document.getElementById("telefono").value.trim();
-
-  // Verifica que todos los campos tengan datos
-  if (!nombre || !apellido || !correo || !telefono) {
-    alert("Por favor completa todos los campos.");
-    return;
-  }
-
-  // Objeto con datos a enviar al servidor
-  const datos = {
-    nombre,
-    apellido,
-    correo,
-    telefono
-  };
-
-  try {
-    // Envía datos al backend
-    const respuesta = await fetch("/api/contacto", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(datos)
-    });
-
-    // Convierte la respuesta a JSON
-    const resultado = await respuesta.json();
-
-    // Si todo sale bien
-    if (resultado.ok) {
-
-      // Oculta el formulario
-      document.getElementById("contenido-form").style.display = "none";
-
-      // Muestra mensaje de éxito
-      document.getElementById("msg-exito").style.display = "block";
-
-      // Limpia el formulario
-      formularioContacto.reset();
-
-    } else {
-      alert(resultado.mensaje);
+// Función de inicialización de EmailJS que faltaba
+function inicializarEmailJS() {
+    if (typeof emailjs !== 'undefined' && typeof EMAILJS_CONFIG !== 'undefined') {
+        emailjs.init(EMAILJS_CONFIG.PUBLIC_KEY);
     }
-
-  } catch (error) {
-    console.error("Error al enviar:", error);
-    alert("Hubo un error al enviar el mensaje.");
-  }
-});
-
-
-
+}
 
 // ==================== GESTIÓN DE SESIÓN ====================
 function verificarSesion() {
@@ -505,13 +445,14 @@ function generarPDFCliente(pedido) {
     element.style.padding = '20px';
     element.style.fontFamily = 'Arial, sans-serif';
     element.style.backgroundColor = '#fff';
+    element.style.color = '#333';
     
     let itemsHTML = '';
     pedido.items.forEach(item => {
         itemsHTML += `
-            <tr>
-                <td style="padding: 8px; border-bottom: 1px solid #ddd;">${item.nombre}</td>
-                <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">$${item.precio.toFixed(2)}</td>
+            <tr style="color: #333;">
+                <td style="padding: 8px; border-bottom: 1px solid #ddd; color: #333;">${item.nombre}</td>
+                <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right; color: #333;">$${item.precio.toFixed(2)}</td>
             </tr>
         `;
     });
@@ -538,7 +479,7 @@ function generarPDFCliente(pedido) {
         <p><strong>Email:</strong> ${pedido.cliente_email}</p>
         
         <h3 style="color: #333; margin-top: 25px;">Detalles de la Compra</h3>
-        <table style="width: 100%; border-collapse: collapse;">
+        <table style="width: 100%; border-collapse: collapse; color: #333;">
             <thead>
                 <tr style="background: #667eea; color: white;">
                     <th style="padding: 12px; text-align: left;">Producto</th>
