@@ -12,6 +12,73 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+// Obtiene el formulario por su ID
+const formularioContacto = document.getElementById("formulario-contacto");
+
+// Detecta cuando se presiona el botón Enviar
+formularioContacto.addEventListener("submit", async function (e) {
+
+  // Evita que la página se recargue
+  e.preventDefault();
+
+  // Captura valores escritos por el usuario
+  const nombre = document.getElementById("nombre").value.trim();
+  const apellido = document.getElementById("apellido").value.trim();
+  const correo = document.getElementById("correo").value.trim();
+  const telefono = document.getElementById("telefono").value.trim();
+
+  // Verifica que todos los campos tengan datos
+  if (!nombre || !apellido || !correo || !telefono) {
+    alert("Por favor completa todos los campos.");
+    return;
+  }
+
+  // Objeto con datos a enviar al servidor
+  const datos = {
+    nombre,
+    apellido,
+    correo,
+    telefono
+  };
+
+  try {
+    // Envía datos al backend
+    const respuesta = await fetch("/api/contacto", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(datos)
+    });
+
+    // Convierte la respuesta a JSON
+    const resultado = await respuesta.json();
+
+    // Si todo sale bien
+    if (resultado.ok) {
+
+      // Oculta el formulario
+      document.getElementById("contenido-form").style.display = "none";
+
+      // Muestra mensaje de éxito
+      document.getElementById("msg-exito").style.display = "block";
+
+      // Limpia el formulario
+      formularioContacto.reset();
+
+    } else {
+      alert(resultado.mensaje);
+    }
+
+  } catch (error) {
+    console.error("Error al enviar:", error);
+    alert("Hubo un error al enviar el mensaje.");
+  }
+});
+
+
+
+
 // ==================== GESTIÓN DE SESIÓN ====================
 function verificarSesion() {
     // Buscar sesión en localStorage o sessionStorage
