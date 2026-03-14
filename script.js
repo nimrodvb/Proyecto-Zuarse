@@ -1,6 +1,94 @@
 let loadMoreBtn = document.querySelector('#load-more');
 let currentItem = 8;
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Obtiene el formulario usando su ID
+const formularioContacto = document.getElementById("formulario-contacto");
+
+// Verifica que el formulario exista en la página
+if (formularioContacto) {
+
+  // Escucha el evento submit del formulario
+  formularioContacto.addEventListener("submit", async function (e) {
+
+    // Evita que la página se recargue al enviar el formulario
+    e.preventDefault();
+
+    // Obtiene los valores ingresados por el usuario
+    const nombre = document.getElementById("nombre").value.trim();
+    const apellido = document.getElementById("apellido").value.trim();
+    const correo = document.getElementById("correo").value.trim();
+    const telefono = document.getElementById("telefono").value.trim();
+
+    // Crea un objeto con los datos para enviarlos al servidor
+    const datos = {
+      nombre,
+      apellido,
+      correo,
+      telefono
+    };
+
+    try {
+
+      // Envía los datos al backend usando fetch
+      const respuesta = await fetch("/api/contacto", {
+
+        // Tipo de petición
+        method: "POST",
+
+        // Indica que los datos se enviarán en formato JSON
+        headers: {
+          "Content-Type": "application/json"
+        },
+
+        // Convierte el objeto a JSON
+        body: JSON.stringify(datos)
+
+      });
+
+      // Convierte la respuesta del servidor a JSON
+      const resultado = await respuesta.json();
+
+      // Muestra la respuesta en la consola para verificar
+      console.log("Respuesta del servidor:", resultado);
+
+      // Si el servidor respondió correctamente
+      if (resultado.ok) {
+
+        // Oculta el formulario
+        document.getElementById("contenido-form").style.display = "none";
+
+        // Muestra el mensaje de éxito
+        document.getElementById("msg-exito").style.display = "block";
+
+        // Limpia los campos del formulario
+        formularioContacto.reset();
+
+      } else {
+
+        // Si ocurrió un problema se muestra el mensaje del servidor
+        alert(resultado.mensaje || "No se pudo guardar");
+
+      }
+
+    } catch (error) {
+
+      // Si ocurre un error de conexión se muestra en consola
+      console.error("Error al enviar formulario:", error);
+
+      // Mensaje para el usuario
+      alert("Hubo un error al enviar el formulario");
+
+    }
+
+  });
+
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 // Cargar productos cuando el DOM está listo
 document.addEventListener('DOMContentLoaded', function() {
     verificarSesion();
