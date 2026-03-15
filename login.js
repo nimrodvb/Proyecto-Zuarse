@@ -40,8 +40,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Inicializar usuarios en localStorage si no existen
     inicializarUsuarios();
+    inicializarEmpleados(); // Inicializar admin de prueba extra
 
-    configurarTabs();
     configurarFormularios();
     configurarErrores();
 });
@@ -54,86 +54,107 @@ function inicializarUsuarios() {
     }
 }
 
+function inicializarEmpleados() {
+    let empleados = JSON.parse(localStorage.getItem('empleados_zuarse')) || [];
+    
+    // Verificar si ya existe el usuario de prueba, si no, agregarlo
+    const existePrueba = empleados.some(e => e.usuario === 'admin_prueba');
+    
+    if (!existePrueba) {
+        const adminPrueba = {
+            id: 9999, // ID reservado para demo
+            usuario: 'admin_prueba',
+            passwordEncriptada: encriptarPassword('123456'),
+            rol: 'admin',
+            fechaCreacion: new Date().toISOString()
+        };
+        empleados.push(adminPrueba);
+        localStorage.setItem('empleados_zuarse', JSON.stringify(empleados));
+        console.log('✅ Admin de prueba creado/restaurado: admin_prueba / 123456');
+    }
+}
+
 // Función para encriptar (se ejecutará cuando el script cargue)
 function encriptarPassword(password) {
     // Usar un hash simple para no depender de CryptoJS
     return btoa(password + SECRET_KEY); // Base64 encoding
 }
 
-// ==================== TABS ====================
-function configurarTabs() {
-    const tabBtns = document.querySelectorAll('.tab-login');
-    const forms = document.querySelectorAll('.form-login');
-
-    tabBtns.forEach(btn => {
-        btn.addEventListener('click', function() {
-            const tabActivo = this.dataset.tab;
-
-            // Remover active
-            tabBtns.forEach(b => b.classList.remove('active'));
-            forms.forEach(f => f.classList.remove('active'));
-
-            // Agregar active
-            this.classList.add('active');
-            document.getElementById('form-' + tabActivo).classList.add('active');
-
-            // Limpiar formularios
-            document.getElementById('form-' + tabActivo).reset();
-        });
-    });
-}
-
 // ==================== FORMULARIOS ====================
 function configurarFormularios() {
-    // Formulario Usuario
-    document.getElementById('form-usuario').addEventListener('submit', loginUsuario);
-
-    // Formulario Admin
-    document.getElementById('form-admin').addEventListener('submit', loginAdmin);
+    // Formulario Unificado
+    const loginForm = document.getElementById('form-login');
+    if (loginForm) {
+        loginForm.addEventListener('submit', loginUnificado);
+    }
 }
 
-function loginUsuario(e) {
+function loginUnificado(e) {
     e.preventDefault();
 
-    const email = document.getElementById('usuario-email').value.trim();
-    const password = document.getElementById('usuario-password').value;
-    const recordar = document.getElementById('usuario-recordar').checked;
+    const identificador = document.getElementById('login-identificador').value.trim().toLowerCase();
+    const password = document.getElementById('login-password').value;
+    const recordar = document.getElementById('login-recordar').checked;
 
     // Validación simple
-    if (!email || !password) {
+    if (!identificador || !password) {
         mostrarError('Por favor completa todos los campos');
         return;
     }
 
-    // Validación de email
-    if (!validarEmail(email)) {
-        mostrarError('Por favor ingresa un email válido');
-        return;
-    }
-
-    // Obtener usuarios registrados
-    const usuariosRegistrados = JSON.parse(localStorage.getItem('usuarios_zuarse')) || {};
-
-    // Verificar si el usuario existe
-    if (!(email in usuariosRegistrados)) {
-        mostrarError('Email o contraseña incorrectos');
-        return;
-    }
-
-    const userData = usuariosRegistrados[email];
     const passwordEncriptada = encriptarPassword(password);
 
-    // Verificar contraseña
-    if (userData.passwordEncriptada !== passwordEncriptada) {
-        mostrarError('Email o contraseña incorrectos');
+    // ================== 1. INTENTO DE LOGIN: ADMIN PRINCIPAL O EMPLEADOS ==================
+    
+    // A) Buscar en lista de empleados creados desde el panel
+    const empleados = JSON.parse(localStorage.getItem('empleados_zuarse')) || [];
+    const empleadoEncontrado = empleados.find(emp => emp.usuario === identificador && emp.passwordEncriptada === passwordEncriptada);
+
+    if (empleadoEncontrado) {
+        crearSesion(empleadoEncontrado.usuario, empleadoEncontrado.rol || 'empleado', recordar);
         return;
     }
 
-    // Crear sesión
+    // B) Buscar Admin Principal (Legacy / Hardcoded)
+    const adminEnLocalStorage = JSON.parse(localStorage.getItem('admin_zuarse'));
+    let esAdmin = false;
+
+    // Verificar si coincide con admin guardado o por defecto
+    if (adminEnLocalStorage && adminEnLocalStorage.usuario === identificador) {
+        if (adminEnLocalStorage.passwordEncriptada === passwordEncriptada) esAdmin = true;
+    } else if (identificador === adminRegistrado.usuario) {
+        if (adminRegistrado.passwordEncriptada === passwordEncriptada) esAdmin = true;
+    }
+
+    if (esAdmin) {
+        crearSesion(identificador, 'admin', recordar);
+        return;
+    }
+
+    // ================== 2. INTENTO DE LOGIN COMO USUARIO ==================
+    const usuariosRegistrados = JSON.parse(localStorage.getItem('usuarios_zuarse')) || {};
+
+    // Verificar si existe el identificador (email) en la lista de usuarios
+    if (identificador in usuariosRegistrados) {
+        const userData = usuariosRegistrados[identificador];
+        
+        // Verificar contraseña
+        if (userData.passwordEncriptada === passwordEncriptada) {
+            crearSesion(identificador, 'usuario', recordar);
+            return;
+        }
+    }
+
+    // Si llegamos aquí, las credenciales no coincidieron con ninguno
+    mostrarError('Usuario, email o contraseña incorrectos');
+}
+
+function crearSesion(identificador, rol, recordar) {
     const sesion = {
         logueado: true,
-        tipo: 'usuario',
-        email: email,
+        tipo: rol,
+        usuario: identificador, // Puede ser email o user
+        email: identificador.includes('@') ? identificador : null,
         fechaLogin: new Date().toISOString()
     };
 
@@ -143,55 +164,13 @@ function loginUsuario(e) {
         sessionStorage.setItem('sesion_zuarse', JSON.stringify(sesion));
     }
 
-    // Redirigir
+    // Redirigir según rol
     setTimeout(() => {
-        window.location.href = 'index.html';
-    }, 500);
-}
-
-function loginAdmin(e) {
-    e.preventDefault();
-
-    const usuario = document.getElementById('admin-usuario').value.trim();
-    const password = document.getElementById('admin-password').value;
-
-    // Validación
-    if (!usuario || !password) {
-        mostrarError('Por favor completa todos los campos');
-        return;
-    }
-
-    // Verificar credenciales del admin - primero buscar en localStorage
-    const passwordEncriptada = encriptarPassword(password);
-    const adminEnLocalStorage = JSON.parse(localStorage.getItem('admin_zuarse'));
-    
-    let adminValido = false;
-    
-    // Si existe admin en localStorage, usar ese; si no, usar el por defecto
-    if (adminEnLocalStorage && adminEnLocalStorage.usuario === usuario) {
-        adminValido = adminEnLocalStorage.passwordEncriptada === passwordEncriptada;
-    } else if (usuario === adminRegistrado.usuario) {
-        adminValido = adminRegistrado.passwordEncriptada === passwordEncriptada;
-    }
-    
-    if (!adminValido) {
-        mostrarError('Usuario o contraseña de administrador incorrectos');
-        return;
-    }
-
-    // Crear sesión admin
-    const sesion = {
-        logueado: true,
-        tipo: 'admin',
-        usuario: usuario,
-        fechaLogin: new Date().toISOString()
-    };
-
-    localStorage.setItem('sesion_zuarse', JSON.stringify(sesion));
-
-    // Redirigir
-    setTimeout(() => {
-        window.location.href = 'admin.html';
+        if (rol === 'admin' || rol === 'empleado') {
+            window.location.href = 'admin.html';
+        } else {
+            window.location.href = 'index.html';
+        }
     }, 500);
 }
 

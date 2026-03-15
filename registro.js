@@ -68,7 +68,8 @@ function registrarUsuario(e) {
         passwordEncriptada: encriptarPassword(password),
         preguntaSeguridad: pregunta.pregunta,
         respuestaSeguridad: respuestaSeguridad,
-        fechaRegistro: new Date().toISOString()
+        fechaRegistro: new Date().toISOString(),
+        rol: 'usuario' // Asignación automática de rol por defecto
     };
 
     // Guardar usuario

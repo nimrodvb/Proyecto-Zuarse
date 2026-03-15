@@ -9,8 +9,15 @@
 <body>
     <script>
         // Verificar sesión de admin antes de cargar
-        const sesion = JSON.parse(localStorage.getItem('sesion_zuarse'));
-        if (!sesion || sesion.tipo !== 'admin') {
+        let sesion = JSON.parse(localStorage.getItem('sesion_zuarse'));
+        if (!sesion) {
+            sesion = JSON.parse(sessionStorage.getItem('sesion_zuarse'));
+        }
+
+        // Roles permitidos en el panel de administración
+        const rolesPermitidos = ['admin', 'empleado'];
+
+        if (!sesion || !rolesPermitidos.includes(sesion.tipo)) {
             window.location.href = 'login.html';
         }
     </script>
@@ -37,6 +44,7 @@
                 <button class="tab-btn" data-tab="compras">Compras</button>
                 <button class="tab-btn" data-tab="pedidos">Pedidos</button>
                 <button class="tab-btn" data-tab="notificaciones">Notificaciones</button>
+                <button class="tab-btn" data-tab="equipo">Equipo</button>
             </nav>
 
             <!-- TAB: DASHBOARD -->
@@ -560,6 +568,58 @@
                     <div id="sin-notificaciones" class="empty-state">
                         No hay notificaciones de pedidos. Los pedidos aparecerán aquí.
                     </div>
+                </div>
+            </section>
+
+            <!-- TAB: EQUIPO (GESTIÓN DE EMPLEADOS) -->
+            <section id="equipo" class="tab-content">
+                <div class="tab-header">
+                    <h2>Gestión de Equipo y Permisos</h2>
+                    <button class="btn-agregar" id="btn-nuevo-empleado">+ Nuevo Empleado</button>
+                </div>
+
+                <div class="form-container" id="form-empleado" style="display: none;">
+                    <h3>Formulario de Empleado</h3>
+                    <form id="formulario-empleado">
+                        <div class="form-group">
+                            <label for="emp-usuario">Nombre de Usuario:</label>
+                            <input type="text" id="emp-usuario" placeholder="ej: soporte1" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="emp-password">Contraseña:</label>
+                            <input type="password" id="emp-password" placeholder="••••••••">
+                            <small style="color: #666;">(Déjalo en blanco si solo estás editando y no quieres cambiarla)</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="emp-rol">Rol / Permisos:</label>
+                            <select id="emp-rol" required>
+                                <option value="empleado">Empleado (Acceso Básico)</option>
+                                <option value="admin">Administrador (Acceso Total)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn-guardar">Guardar Empleado</button>
+                            <button type="button" class="btn-cancelar" id="cancelar-empleado">Cancelar</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="lista-container">
+                    <table id="tabla-equipo">
+                        <thead>
+                            <tr>
+                                <th>Usuario</th>
+                                <th>Rol</th>
+                                <th>Fecha Creación</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-equipo"></tbody>
+                    </table>
+                    <div id="sin-equipo" class="empty-state">No hay empleados adicionales registrados.</div>
                 </div>
             </section>
         </div>

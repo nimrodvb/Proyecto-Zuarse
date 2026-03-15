@@ -1,10 +1,12 @@
 // VARIABLES GLOBALES
+const SECRET_KEY = 'zuarse_secret_2024'; // Necesario para crear contraseñas de empleados
 let productoEditando = null;
 let clienteEditando = null;
 let pedidoVisualizando = null;
 let categoriaEditando = null;
 let proveedorEditando = null;
 let compraEditando = null;
+let empleadoEditando = null;
 
 // FUNCIONES DE SESIÓN
 function cerrarSesionAdmin() {
@@ -29,6 +31,7 @@ document.addEventListener('DOMContentLoaded', function() {
     try { cargarPedidos(); } catch(e) { console.error(e); }
     try { cargarNotificaciones(); } catch(e) { console.error(e); }
     try { cargarDashboard(); } catch(e) { console.error(e); }
+    try { cargarEquipo(); } catch(e) { console.error(e); }
 });
 
 // ==================== CONFIGURAR EVENTOS ====================
@@ -117,6 +120,14 @@ function configurarEventos() {
     if (closeModal) closeModal.addEventListener('click', cerrarModalPedido);
     if (btnCerrarModal) btnCerrarModal.addEventListener('click', cerrarModalPedido);
     if (btnGuardarEstado) btnGuardarEstado.addEventListener('click', guardarEstadoPedido);
+
+    // Equipo (Empleados)
+    const btnNuevoEmpleado = document.getElementById('btn-nuevo-empleado');
+    const cancelarEmpleado = document.getElementById('cancelar-empleado');
+    const formularioEmpleado = document.getElementById('formulario-empleado');
+    if (btnNuevoEmpleado) btnNuevoEmpleado.addEventListener('click', mostrarFormEmpleado);
+    if (cancelarEmpleado) cancelarEmpleado.addEventListener('click', ocultarFormEmpleado);
+    if (formularioEmpleado) formularioEmpleado.addEventListener('submit', guardarEmpleado);
 }
 
 // ==================== NAVEGACIÓN DE TABS ====================
@@ -1354,4 +1365,124 @@ function renderizarGraficoVentas(pedidos) {
     });
     html += '</div>';
     container.innerHTML = html;
+}
+
+// ==================== EQUIPO (EMPLEADOS) ====================
+function mostrarFormEmpleado() {
+    empleadoEditando = null;
+    document.getElementById('formulario-empleado').reset();
+    document.getElementById('emp-password').required = true; // Password obligatorio al crear
+    document.getElementById('form-empleado').style.display = 'block';
+    document.querySelector('#form-empleado h3').textContent = 'Nuevo Empleado';
+}
+
+function ocultarFormEmpleado() {
+    document.getElementById('form-empleado').style.display = 'none';
+    document.getElementById('formulario-empleado').reset();
+    empleadoEditando = null;
+}
+
+function guardarEmpleado(e) {
+    e.preventDefault();
+
+    const usuario = document.getElementById('emp-usuario').value.trim().toLowerCase();
+    const password = document.getElementById('emp-password').value;
+    const rol = document.getElementById('emp-rol').value;
+
+    if (!usuario) {
+        alert('El usuario es obligatorio');
+        return;
+    }
+
+    // Si es nuevo, requerimos contraseña
+    if (!empleadoEditando && !password) {
+        alert('La contraseña es obligatoria para nuevos empleados');
+        return;
+    }
+
+    let empleados = JSON.parse(localStorage.getItem('empleados_zuarse')) || [];
+
+    // Validar usuario único
+    const existe = empleados.some(emp => emp.usuario === usuario && (!empleadoEditando || emp.id !== empleadoEditando.id));
+    if (existe || usuario === 'admin') {
+        alert('Ese nombre de usuario ya está en uso');
+        return;
+    }
+
+    const empleadoData = {
+        id: empleadoEditando?.id || Date.now(),
+        usuario: usuario,
+        rol: rol,
+        fechaCreacion: empleadoEditando?.fechaCreacion || new Date().toISOString()
+    };
+
+    // Manejo de contraseña (solo actualizar si se escribió algo o es nuevo)
+    if (password) {
+        empleadoData.passwordEncriptada = btoa(password + SECRET_KEY);
+    } else if (empleadoEditando) {
+        empleadoData.passwordEncriptada = empleadoEditando.passwordEncriptada;
+    }
+
+    if (empleadoEditando) {
+        empleados = empleados.map(e => e.id === empleadoEditando.id ? empleadoData : e);
+    } else {
+        empleados.push(empleadoData);
+    }
+
+    localStorage.setItem('empleados_zuarse', JSON.stringify(empleados));
+    ocultarFormEmpleado();
+    cargarEquipo();
+    alert('Empleado guardado correctamente');
+}
+
+function cargarEquipo() {
+    const empleados = JSON.parse(localStorage.getItem('empleados_zuarse')) || [];
+    const tbody = document.getElementById('tbody-equipo');
+    const sinEquipo = document.getElementById('sin-equipo');
+
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    if (empleados.length === 0) {
+        sinEquipo.style.display = 'block';
+        return;
+    }
+    sinEquipo.style.display = 'none';
+
+    empleados.forEach(emp => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${escapeHtml(emp.usuario)}</td>
+            <td><span class="badge badge-${emp.rol === 'admin' ? 'procesando' : 'pendiente'}">${emp.rol.toUpperCase()}</span></td>
+            <td>${new Date(emp.fechaCreacion).toLocaleDateString()}</td>
+            <td>
+                <button class="btn-editar" onclick="editarEmpleado(${emp.id})">Editar</button>
+                <button class="btn-eliminar" onclick="eliminarEmpleado(${emp.id})">Eliminar</button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function editarEmpleado(id) {
+    const empleados = JSON.parse(localStorage.getItem('empleados_zuarse')) || [];
+    const emp = empleados.find(e => e.id === id);
+    if (!emp) return;
+
+    empleadoEditando = emp;
+    document.getElementById('emp-usuario').value = emp.usuario;
+    document.getElementById('emp-rol').value = emp.rol;
+    document.getElementById('emp-password').value = '';
+    document.getElementById('emp-password').required = false; // Opcional al editar
+
+    document.querySelector('#form-empleado h3').textContent = 'Editar Empleado';
+    document.getElementById('form-empleado').style.display = 'block';
+}
+
+function eliminarEmpleado(id) {
+    if (!confirm('¿Seguro que deseas eliminar este empleado?')) return;
+    let empleados = JSON.parse(localStorage.getItem('empleados_zuarse')) || [];
+    empleados = empleados.filter(e => e.id !== id);
+    localStorage.setItem('empleados_zuarse', JSON.stringify(empleados));
+    cargarEquipo();
 }

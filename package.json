@@ -4,7 +4,8 @@
   "description": "ZUARSE es una aplicación web completa para la gestión de una tienda en línea, desarrollada íntegramente en el lado del cliente (frontend) utilizando HTML, CSS y JavaScript. No requiere un backend ni una base de datos, ya que toda la información se persiste en el `localStorage` del navegador.",
   "main": "admin.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
   },
   "repository": {
     "type": "git",

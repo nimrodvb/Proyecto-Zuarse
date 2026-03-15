@@ -15,11 +15,12 @@ Este proyecto simula un entorno de e-commerce real, incluyendo un catálogo de p
 - **Sesión de Usuario**: Sistema de inicio de sesión y registro para clientes.
 
 ### 🔐 Autenticación y Seguridad
-- **Roles de Usuario**: Separación clara entre **Usuarios Normales** y **Administradores**.
+- **Roles de Usuario**: Sistema de roles que incluye **Usuarios** (Tienda), **Empleados** y **Administradores** (Panel de Gestión).
 - **Registro de Usuarios**: Los nuevos clientes pueden crear una cuenta.
+- **Login Inteligente**: El sistema de inicio de sesión no distingue entre mayúsculas y minúsculas (Case-Insensitive), facilitando el acceso.
 - **Encriptación de Contraseñas**: Las contraseñas se almacenan encriptadas usando Base64 y una clave secreta (`SECRET_KEY`).
 - **Recuperación de Contraseña**: Sistema de 3 pasos basado en preguntas de seguridad.
-- **Protección de Rutas**: El panel de administración (`admin.html`) es inaccesible sin una sesión de administrador activa.
+- **Protección de Rutas**: El panel de administración (`admin.html`) está protegido y es accesible únicamente para **Administradores** y **Empleados**.
 
 ### 📊 Panel de Administración (`admin.html`)
 Un panel centralizado para gestionar toda la tienda:
@@ -55,9 +56,13 @@ Este proyecto no requiere un servidor web. Puedes ejecutarlo directamente en tu 
 -   **Email:** `usuario@test.com`
 -   **Contraseña:** `usuario123`
 
-#### Administrador (Panel Admin)
--   **Usuario:** `admin`
+#### Administrador Principal (Panel Admin)
+-   **Usuario:** `admin` (Acepta `Admin` o `ADMIN`)
 -   **Contraseña:** `admin123`
+
+#### Administrador de Prueba (Automático)
+-   **Usuario:** `admin_prueba`
+-   **Contraseña:** `123456`
 
 ## ⚙️ Flujos de Funcionamiento
 
@@ -157,7 +162,14 @@ El proyecto utiliza dos librerías externas incluidas directamente en los archiv
 -   `registrarUsuario()`: Valida los datos del formulario de registro, encripta la contraseña y crea el nuevo usuario y cliente.
 -   `buscarUsuario()`, `verificarRespuesta()`, `cambiarPassword()`: Gestionan los pasos del flujo de recuperación de contraseña.
 
-## 🔮 Próximas Mejoras Sugeridas
+## 📋 Historial de Cambios Recientes
+
+### Corrección de Login y Sesiones
+- **Normalización de Credenciales**: Se implementó `.toLowerCase()` en `login.js` y `admin.js`. Ahora el sistema acepta usuarios como "Admin", "ADMIN" o "admin" indistintamente, convirtiéndolos automáticamente a minúsculas antes de validar.
+- **Soporte de SessionStorage**: Se corrigió la lógica de seguridad en `admin.html`. Anteriormente, si no se marcaba "Recuérdame", el panel administrativo no encontraba la sesión y expulsaba al usuario. Ahora verifica tanto `localStorage` como `sessionStorage`.
+- **Permisos de Roles**: Se actualizó la protección de rutas en `admin.html` para permitir explícitamente el acceso a los roles `admin` y `empleado`, solucionando bucles de redirección.
+
+## � Próximas Mejoras Sugeridas
 -   [ ] **Dashboard de Métricas**: Añadir una pestaña de "Reportes" con gráficos de ventas por fecha, productos más vendidos, etc.
 -   [ ] **Integración con Pasarela de Pagos Real**: Reemplazar la pasarela simulada con una real como Stripe o Mercado Pago.
 -   [ ] **Backup y Restauración**: Funcionalidad para que el administrador pueda exportar todos los datos de `localStorage` a un archivo JSON y restaurarlos.

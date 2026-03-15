@@ -11,59 +11,29 @@
         <div class="login-box">
             <div class="login-header">
                 <h1>ZUARSE</h1>
-                <p>Sistema de Gestión</p>
+                <p>Iniciar Sesión</p>
             </div>
 
-            <div class="tabs-login">
-                <button class="tab-login active" data-tab="usuario">Usuario</button>
-                <button class="tab-login" data-tab="admin">Administrador</button>
-            </div>
-
-            <!-- PANEL USUARIO -->
-            <form id="form-usuario" class="form-login active">
-                <h2>Acceso a Tienda</h2>
-                
+            <!-- FORMULARIO UNIFICADO -->
+            <form id="form-login" class="form-login active">
                 <div class="form-group">
-                    <label for="usuario-email">Email:</label>
-                    <input type="email" id="usuario-email" placeholder="tu@email.com" required>
+                    <label for="login-identificador">Email o Usuario:</label>
+                    <input type="text" id="login-identificador" placeholder="Correo electrónico o usuario admin" required>
                 </div>
 
                 <div class="form-group">
-                    <label for="usuario-password">Contraseña:</label>
-                    <input type="password" id="usuario-password" placeholder="••••••••" required>
+                    <label for="login-password">Contraseña:</label>
+                    <input type="password" id="login-password" placeholder="••••••••" required>
                 </div>
 
-                <button type="submit" class="btn-login">Entrar como Usuario</button>
+                <button type="submit" class="btn-login">Ingresar</button>
 
                 <div class="form-footer">
                     <label class="checkbox">
-                        <input type="checkbox" id="usuario-recordar">
+                        <input type="checkbox" id="login-recordar">
                         <span>Recuérdame</span>
                     </label>
                     <a href="recuperar-password.html" class="link-recuperar">¿Olvidaste tu contraseña?</a>
-                </div>
-            </form>
-
-            <!-- PANEL ADMIN -->
-            <form id="form-admin" class="form-login">
-                <h2>Acceso Administrativo</h2>
-                
-                <div class="form-group">
-                    <label for="admin-usuario">Usuario Administrador:</label>
-                    <input type="text" id="admin-usuario" placeholder="admin" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="admin-password">Contraseña:</label>
-                    <input type="password" id="admin-password" placeholder="••••••••" required>
-                </div>
-
-                <button type="submit" class="btn-login btn-admin">Entrar como Admin</button>
-
-                <div class="info-admin">
-                    <p><strong>Credenciales de prueba:</strong></p>
-                    <p>Usuario: <code>admin</code></p>
-                    <p>Contraseña: <code>admin123</code></p>
                 </div>
             </form>
 
