@@ -111,7 +111,7 @@ function loginUnificado(e) {
     const empleadoEncontrado = empleados.find(emp => emp.usuario === identificador && emp.passwordEncriptada === passwordEncriptada);
 
     if (empleadoEncontrado) {
-        crearSesion(empleadoEncontrado.usuario, empleadoEncontrado.rol || 'empleado', recordar);
+        crearSesion(empleadoEncontrado.usuario, empleadoEncontrado.rol || 'cliente', recordar);
         return;
     }
 
@@ -166,7 +166,7 @@ function crearSesion(identificador, rol, recordar) {
 
     // Redirigir según rol
     setTimeout(() => {
-        if (rol === 'admin' || rol === 'empleado') {
+        if (rol === 'admin' || rol === 'cliente') {
             window.location.href = 'admin.html';
         } else {
             window.location.href = 'index.html';

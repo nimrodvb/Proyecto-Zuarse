@@ -132,7 +132,7 @@ function configurarEventos() {
 
 // ==================== NAVEGACIÓN DE TABS ====================
 function cambiarTab(e) {
-    const tabBtn = e.target;
+    const tabBtn = e.currentTarget;
     const tabNombre = tabBtn.dataset.tab;
 
     // Remover active de todos los botones

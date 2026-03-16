@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel Administrativo - ZUARSE</title>
     <link rel="stylesheet" href="admin-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
     <script>
@@ -15,55 +16,75 @@
         }
 
         // Roles permitidos en el panel de administración
-        const rolesPermitidos = ['admin', 'empleado'];
+        const rolesPermitidos = ['admin', 'cliente'];
 
         if (!sesion || !rolesPermitidos.includes(sesion.tipo)) {
             window.location.href = 'login.html';
         }
     </script>
-    <div class="admin-container">
-        <header class="admin-header">
-            <div class="header-content">
-                <h1>Panel Administrativo</h1>
-                <div class="header-actions">
-                    <a href="index.html" class="btn-volver">Volver a Tienda</a>
-                    <button onclick="cerrarSesionAdmin()" class="btn-logout">Cerrar Sesión</button>
-                </div>
+    <div class="admin-wrapper">
+        <!-- SIDEBAR VERTICAL -->
+        <aside class="admin-sidebar">
+            <div class="sidebar-header">
+                <h2>ZUARSE</h2>
+                <p>Admin Panel</p>
             </div>
-        </header>
 
-        <div class="admin-content">
-            <!-- NAVEGACIÓN DE PESTAÑAS -->
-            <nav class="tabs-nav">
-                <button class="tab-btn active" data-tab="reportes">Reportes</button>
-                <button class="tab-btn" data-tab="productos">Productos</button>
-                <button class="tab-btn" data-tab="inventario">Inventario</button>
-                <button class="tab-btn" data-tab="categorias">Categorías</button>
-                <button class="tab-btn" data-tab="clientes">Clientes</button>
-                <button class="tab-btn" data-tab="proveedores">Proveedores</button>
-                <button class="tab-btn" data-tab="compras">Compras</button>
-                <button class="tab-btn" data-tab="pedidos">Pedidos</button>
-                <button class="tab-btn" data-tab="notificaciones">Notificaciones</button>
-                <button class="tab-btn" data-tab="equipo">Equipo</button>
+            <nav class="sidebar-menu">
+                <p class="menu-label">General</p>
+                <button class="tab-btn active" data-tab="reportes"><i class="fas fa-chart-line"></i> Reportes</button>
+                <button class="tab-btn" data-tab="notificaciones"><i class="fas fa-bell"></i> Notificaciones</button>
+                
+                <p class="menu-label">Ventas</p>
+                <button class="tab-btn" data-tab="pedidos"><i class="fas fa-shopping-cart"></i> Pedidos</button>
+                <button class="tab-btn" data-tab="clientes"><i class="fas fa-users"></i> Clientes</button>
+                
+                <p class="menu-label">Catálogo</p>
+                <button class="tab-btn" data-tab="productos"><i class="fas fa-box-open"></i> Productos</button>
+                <button class="tab-btn" data-tab="inventario"><i class="fas fa-warehouse"></i> Inventario</button>
+                <button class="tab-btn" data-tab="categorias"><i class="fas fa-tags"></i> Categorías</button>
+                
+                <p class="menu-label">Gestión</p>
+                <button class="tab-btn" data-tab="compras"><i class="fas fa-file-invoice-dollar"></i> Compras</button>
+                <button class="tab-btn" data-tab="proveedores"><i class="fas fa-truck"></i> Proveedores</button>
+                <button class="tab-btn" data-tab="equipo"><i class="fas fa-user-shield"></i> Equipo</button>
             </nav>
 
+            <div class="sidebar-footer">
+                <button onclick="cerrarSesionAdmin()" class="btn-logout-sidebar"><i class="fas fa-sign-out-alt"></i> Salir</button>
+            </div>
+        </aside>
+
+        <!-- CONTENIDO PRINCIPAL -->
+        <main class="admin-main">
+            <header class="top-bar">
+                <div class="top-bar-title">
+                    <h1>Panel de Control</h1>
+                </div>
+                <div class="top-bar-actions">
+                    <span class="admin-user-info"><i class="fas fa-user-circle"></i> Admin</span>
+                    <a href="index.html" class="btn-volver-tienda"><i class="fas fa-store"></i> Ir a Tienda</a>
+                </div>
+            </header>
+
+            <div class="admin-content-area">
             <!-- TAB: DASHBOARD -->
             <div id="reportes" class="tab-content active">
                 <div class="reportes-grid">
                     <div class="reporte-card">
-                        <h3>Ingresos Totales</h3>
+                        <h3><i class="fas fa-money-bill-wave"></i> Ingresos Totales</h3>
                         <div class="numero" id="dash-total-ingresos">$0.00</div>
                     </div>
                     <div class="reporte-card">
-                        <h3>Pedidos Totales</h3>
+                        <h3><i class="fas fa-shopping-bag"></i> Pedidos Totales</h3>
                         <div class="numero" id="dash-total-pedidos">0</div>
                     </div>
                     <div class="reporte-card">
-                        <h3>Productos</h3>
+                        <h3><i class="fas fa-boxes"></i> Productos</h3>
                         <div class="numero" id="dash-total-productos">0</div>
                     </div>
                     <div class="reporte-card">
-                        <h3>Clientes</h3>
+                        <h3><i class="fas fa-users"></i> Clientes</h3>
                         <div class="numero" id="dash-total-clientes">0</div>
                     </div>
                 </div>
@@ -595,7 +616,7 @@
                         <div class="form-group">
                             <label for="emp-rol">Rol / Permisos:</label>
                             <select id="emp-rol" required>
-                                <option value="empleado">Empleado (Acceso Básico)</option>
+                                <option value="cliente">Empleado (Acceso Básico)</option>
                                 <option value="admin">Administrador (Acceso Total)</option>
                             </select>
                         </div>
@@ -622,7 +643,8 @@
                     <div id="sin-equipo" class="empty-state">No hay empleados adicionales registrados.</div>
                 </div>
             </section>
-        </div>
+            </div> <!-- Fin admin-content-area -->
+        </main>
     </div>
 
     <!-- Librerías para PDF y Email -->
