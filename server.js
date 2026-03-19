@@ -61,36 +61,32 @@ app.get("/api/prueba", async (req, res) => {
 app.post("/api/contacto", async (req, res) => {
   // Bloque try...catch para manejar errores durante el proceso.
   try {
-    // Extrae las variables 'nombre', 'apellido', 'correo' y 'telefono' del cuerpo (body) de la petición. Estos datos son enviados por el formulario del frontend.
+    // Extrae las variables 'nombre', 'apellido', 'correo' y 'telefono' del body.
     const { nombre, apellido, correo, telefono } = req.body;
 
     // Establece la conexión con la base de datos.
     const pool = await conectarDB();
 
-    // Prepara y ejecuta una consulta SQL para insertar los datos en la tabla 'Contactos'.
+    // Prepara y ejecuta la consulta SQL para insertar en la tabla CONTACTOS.
     await pool.request()
-      // .input() es un método seguro para pasar variables a una consulta SQL. Previene ataques de inyección SQL.
-      // Define un parámetro llamado 'nombre' de tipo NVarChar(100) y le asigna el valor de la variable 'nombre'.
+      // Se usan nombres de parámetros en minúscula para que coincidan con @nombre, @apellido, etc.
       .input("nombre", sql.NVarChar(100), nombre)
-      // Define el parámetro 'apellido'.
       .input("apellido", sql.NVarChar(100), apellido)
-      // Define el parámetro 'correo'.
+      // Se ajusta el tamaño a NVARCHAR(150) según la tabla
       .input("correo", sql.NVarChar(150), correo)
-      // Define el parámetro 'telefono'.
-      .input("telefono", sql.NVarChar(50), telefono)
-      // Ejecuta la consulta de inserción utilizando los parámetros definidos (@nombre, @apellido, etc.).
+      // Se ajusta el tamaño a NVARCHAR(20) según la tabla
+      .input("telefono", sql.NVarChar(20), telefono)
+      // Se usa el nombre correcto de la tabla y columnas en mayúscula
       .query(`
-        INSERT INTO Contactos (Nombre, Apellido, Correo, Telefono)
+        INSERT INTO CONTACTOS (NOMBRE, APELLIDO, CORREO, TELEFONO)
         VALUES (@nombre, @apellido, @correo, @telefono)
       `);
 
-    // Si la inserción es exitosa, envía una respuesta JSON al cliente confirmando que todo salió bien.
+    // Respuesta exitosa
     res.json({ ok: true, mensaje: "Mensaje guardado correctamente" });
   } catch (error) {
-    // Si ocurre un error durante la inserción.
-    // Imprime el error en la consola del servidor.
+    // Manejo de errores
     console.error("Error en /api/contacto:", error);
-    // Envía una respuesta de error 500 al cliente con un mensaje explicativo.
     res.status(500).json({ ok: false, mensaje: "Error al guardar el mensaje" });
   }
 });
