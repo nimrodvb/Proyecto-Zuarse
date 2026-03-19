@@ -323,7 +323,15 @@
   async function probarConexion() {
     try {
       // Hace una solicitud a la ruta /api/prueba del servidor
-      const res = await fetch('/api/prueba');
+      // IMPORTANTE: Si usas Live Server (puerto 5500), usa la URL completa: http://localhost:3000/api/prueba
+      // Si abres localhost:3000 directamente, la ruta relativa '/api/prueba' funciona bien.
+      const url = window.location.port === '3000' ? '/api/prueba' : 'http://localhost:3000/api/prueba';
+      
+      const res = await fetch(url);
+
+      if (!res.ok) {
+        throw new Error(`Error HTTP: ${res.status} - ${res.statusText}`);
+      }
 
       // Convierte la respuesta a formato JSON
       const data = await res.json();
@@ -332,8 +340,9 @@
       document.getElementById('resultado').textContent =
         JSON.stringify(data, null, 2);
     } catch (error) {
-      // Si ocurre un error, muestra mensaje de fallo
-      document.getElementById('resultado').textContent = 'Error de conexión';
+      // Muestra el error real en la consola y en pantalla
+      console.error(error);
+      document.getElementById('resultado').textContent = 'Fallo: ' + error.message + '\n\n(Asegúrate de ejecutar "node server.js" y no solo Live Server)';
     }
   }
 </script>

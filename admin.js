@@ -145,48 +145,110 @@ function cambiarTab(e) {
 }
 
 // ==================== PRODUCTOS ====================
+/**
+ * Muestra el formulario para crear un nuevo producto.
+ *
+ * Resetea el formulario, limpia la variable de edición, cambia el título a "Nuevo Producto"
+ * y hace visible el contenedor del formulario.
+ */
 function mostrarFormProducto() {
-    productoEditando = null;
-    document.getElementById('formulario-producto').reset();
-    document.getElementById('form-producto').style.display = 'block';
-    document.querySelector('#form-producto h3').textContent = 'Nuevo Producto';
+    productoEditando = null; // Limpiar edición previa
+    document.getElementById('formulario-producto').reset(); // Limpiar campos
+    document.getElementById('form-producto').style.display = 'block'; // Mostrar formulario
+    document.querySelector('#form-producto h3').textContent = 'Nuevo Producto'; // Cambiar título
 }
 
+/**
+ * Oculta el formulario de producto y lo resetea.
+ *
+ * Hace invisible el contenedor del formulario, resetea todos los campos y limpia la variable de edición.
+ */
 function ocultarFormProducto() {
-    document.getElementById('form-producto').style.display = 'none';
-    document.getElementById('formulario-producto').reset();
-    productoEditando = null;
+    document.getElementById('form-producto').style.display = 'none'; // Ocultar formulario
+    document.getElementById('formulario-producto').reset(); // Limpiar campos
+    productoEditando = null; // Limpiar edición
 }
 
+/**
+ * Guarda un producto nuevo o actualiza uno existente en localStorage.
+ *
+ * Esta función valida los datos del formulario, crea o actualiza el objeto producto,
+ * lo guarda en localStorage y recarga las vistas correspondientes.
+ *
+ * Validaciones realizadas:
+ * - Nombre: obligatorio, no vacío.
+ * - Precio: debe ser un número flotante válido y no negativo.
+ * - Stock: debe ser un número entero válido y no negativo.
+ *
+ * Si alguna validación falla, muestra una alerta y detiene el proceso.
+ *
+ * Después de guardar, oculta el formulario, recarga la lista de productos y el inventario,
+ * y muestra una alerta de éxito.
+ *
+ * @param {Event} e - El evento de submit del formulario.
+ */
 function guardarProducto(e) {
     e.preventDefault();
 
+    // Obtener y validar datos del formulario
+    const nombre = document.getElementById('prod-nombre').value.trim();
+    const precio = parseFloat(document.getElementById('prod-precio').value);
+    const stockInput = document.getElementById('prod-stock').value.trim();
+    const stock = parseInt(stockInput);
+
+    // Validación: nombre obligatorio
+    if (!nombre) {
+        alert('Por favor ingresa un nombre para el producto.');
+        return;
+    }
+
+    // Validación: precio válido y no negativo
+    if (isNaN(precio) || precio < 0) {
+        alert('Por favor ingresa un precio válido.');
+        return;
+    }
+
+    // Validación: stock válido y no negativo
+    if (isNaN(stock) || stock < 0) {
+        alert('Por favor ingresa una cantidad de stock válida (número entero positivo o cero).');
+        return;
+    }
+
+    // Crear objeto producto
     const producto = {
-        id: productoEditando?.id || Date.now(),
-        nombre: document.getElementById('prod-nombre').value,
+        id: productoEditando?.id || Date.now(), // Usar ID existente o generar nuevo
+        nombre: nombre,
         descripcion: document.getElementById('prod-descripcion').value,
-        precio: parseFloat(document.getElementById('prod-precio').value),
+        precio: precio,
         imagen: document.getElementById('prod-imagen').value || 'images/default.png',
-        stock: parseInt(document.getElementById('prod-stock').value),
+        stock: stock, // Ahora garantizado como número entero válido
         categoria: document.getElementById('prod-categoria').value || 'General',
         fechaCreacion: productoEditando?.fechaCreacion || new Date().toLocaleDateString()
     };
 
+    // Obtener productos existentes de localStorage
     let productos = JSON.parse(localStorage.getItem('productos')) || [];
 
+    // Actualizar o agregar el producto
     if (productoEditando) {
-        // Actualizar
+        // Modo edición: reemplazar el producto existente
         productos = productos.map(p => p.id === productoEditando.id ? producto : p);
     } else {
-        // Crear nuevo
+        // Modo creación: agregar nuevo producto
         productos.push(producto);
     }
 
+    // Guardar en localStorage
     localStorage.setItem('productos', JSON.stringify(productos));
+
+    // Limpiar y ocultar formulario
     ocultarFormProducto();
+
+    // Recargar vistas para reflejar cambios
     cargarProductos();
-    // Recargar el inventario para reflejar los cambios en el stock o el nuevo producto
     cargarInventario();
+
+    // Notificar éxito
     alert('Producto guardado exitosamente');
 }
 
@@ -224,7 +286,7 @@ function cargarProductos() {
             <td>#${producto.id}</td>
             <td>${producto.nombre}</td>
             <td>$${(producto.precio || 0).toFixed(2)}</td>
-            <td>${producto.stock}</td>
+            <td>${isNaN(parseInt(producto.stock)) ? 0 : parseInt(producto.stock)}</td>
             <td>${producto.categoria}</td>
             <td>
                 <button class="btn-editar" onclick="editarProducto(${producto.id})">Editar</button>
@@ -235,33 +297,66 @@ function cargarProductos() {
     });
 }
 
+/**
+ * Carga los datos de un producto existente en el formulario para edición.
+ *
+ * Busca el producto por ID en localStorage, llena los campos del formulario con sus datos,
+ * marca el producto como "editando" y muestra el formulario.
+ *
+ * Si el producto no existe, no hace nada.
+ *
+ * @param {number} id - El ID único del producto a editar.
+ */
 function editarProducto(id) {
     const productos = JSON.parse(localStorage.getItem('productos')) || [];
     const producto = productos.find(p => p.id === id);
 
-    if (!producto) return;
+    if (!producto) return; // Producto no encontrado
 
+    // Marcar como editando
     productoEditando = producto;
+
+    // Llenar formulario con datos del producto
     document.getElementById('prod-nombre').value = producto.nombre;
     document.getElementById('prod-descripcion').value = producto.descripcion;
     document.getElementById('prod-precio').value = producto.precio;
     document.getElementById('prod-imagen').value = producto.imagen;
-    document.getElementById('prod-stock').value = producto.stock;
+    // Asegurar que stock sea un número válido (tratar NaN como 0)
+    document.getElementById('prod-stock').value = isNaN(parseInt(producto.stock)) ? 0 : parseInt(producto.stock);
     document.getElementById('prod-categoria').value = producto.categoria;
 
+    // Cambiar título del formulario
     document.querySelector('#form-producto h3').textContent = 'Editar Producto';
+
+    // Mostrar formulario
     document.getElementById('form-producto').style.display = 'block';
 }
 
+/**
+ * Elimina un producto del localStorage después de confirmar con el usuario.
+ *
+ * Muestra un diálogo de confirmación. Si el usuario confirma, filtra el producto por ID
+ * de la lista de productos, guarda los cambios en localStorage y recarga la vista de productos.
+ * También recarga el inventario para reflejar la eliminación.
+ *
+ * @param {number} id - El ID único del producto a eliminar.
+ */
 function eliminarProducto(id) {
+    // Confirmar eliminación con el usuario
     if (!confirm('¿Estás seguro de que deseas eliminar este producto?')) return;
 
+    // Obtener productos y filtrar el que se va a eliminar
     let productos = JSON.parse(localStorage.getItem('productos')) || [];
     productos = productos.filter(p => p.id !== id);
+
+    // Guardar cambios
     localStorage.setItem('productos', JSON.stringify(productos));
+
+    // Recargar vistas
     cargarProductos();
-    // Recargar el inventario para reflejar el producto eliminado
-    cargarInventario();
+    cargarInventario(); // Para reflejar el producto eliminado
+
+    // Notificar éxito (opcional, ya que confirm() informa)
 }
 
 // ==================== INVENTARIO ====================
@@ -305,11 +400,15 @@ function cargarInventario() {
     if (sinInventario) sinInventario.style.display = 'none';
 
     // Ordenar por stock más bajo primero para priorizar
-    productosFiltrados.sort((a, b) => (a.stock || 0) - (b.stock || 0));
+    productosFiltrados.sort((a, b) => {
+        const stockA = isNaN(parseInt(a.stock)) ? 0 : parseInt(a.stock);
+        const stockB = isNaN(parseInt(b.stock)) ? 0 : parseInt(b.stock);
+        return stockA - stockB;
+    });
 
     productosFiltrados.forEach(producto => {
         const row = document.createElement('tr');
-        const stock = producto.stock || 0;
+        const stock = isNaN(parseInt(producto.stock)) ? 0 : parseInt(producto.stock);
         
         let stockClass = '';
         if (stock === 0) {
@@ -855,15 +954,30 @@ function guardarCompra(e) {
     let compras = JSON.parse(localStorage.getItem('compras')) || [];
 
     if (compraEditando) {
+        // Cambio 1: Al editar una compra, revertimos primero el stock registrado anteriormente
+        // para evitar sumar dos veces la misma cantidad.
+        ajustarStockPorCompra(compraEditando.productos, -1, { actualizarPrecio: false });
         compras = compras.map(c => c.id === compraEditando.id ? compra : c);
     } else {
         compras.push(compra);
     }
 
+    // Cambio 1: Agregar el stock de los productos registrados en esta compra.
+    // Cambio 2: Actualizar el precio del producto según el precio unitario ingresado en la compra.
+    ajustarStockPorCompra(compra.productos, 1, { actualizarPrecio: true });
+
     localStorage.setItem('compras', JSON.stringify(compras));
     ocultarFormCompra();
     cargarCompras();
-    alert('Compra registrada exitosamente');
+
+    // Refrescar productos/inventario para mostrar el nuevo stock y precio
+    cargarProductos();
+    cargarInventario();
+
+    const mensaje = compraEditando
+        ? 'Compra actualizada correctamente. Stock y precios de productos ajustados.'
+        : 'Compra registrada correctamente. Stock y precios de productos ajustados.';
+    alert(mensaje);
 }
 
 function cargarCompras() {
@@ -933,9 +1047,18 @@ function eliminarCompra(id) {
     if (!confirm('¿Estás seguro de que deseas eliminar esta compra?')) return;
 
     let compras = JSON.parse(localStorage.getItem('compras')) || [];
+    const compra = compras.find(c => c.id === id);
+    if (compra) {
+        // Cambio 1: Al eliminar una compra, restar del stock las cantidades que se habían sumado.
+        // (No se cambia el precio del producto al eliminar una compra).
+        ajustarStockPorCompra(compra.productos, -1);
+    }
+
     compras = compras.filter(c => c.id !== id);
     localStorage.setItem('compras', JSON.stringify(compras));
     cargarCompras();
+    cargarProductos();
+    cargarInventario();
 }
 
 function filtrarProductosCompra() {
@@ -993,6 +1116,67 @@ function agregarProductoACompra() {
     prodSelect.value = '';
     itemCantidadInput.value = '1';
     itemPrecioInput.value = '';
+}
+
+/**
+ * Ajusta el stock (y opcionalmente el precio) de los productos según los items registrados en una compra.
+ *
+ * Esta función procesa el texto de productos de una compra (formato: "cantidad - nombre - ₡precio - ₡subtotal"),
+ * encuentra cada producto por nombre en localStorage, y ajusta su stock sumando/restando la cantidad
+ * multiplicada por el multiplicador. Opcionalmente, actualiza el precio del producto.
+ *
+ * Cambios realizados en el código:
+ * 1) Actualiza el stock del producto según la cantidad registrada en la compra (suma para compras nuevas, resta para eliminaciones).
+ * 2) Puede actualizar el precio del producto usando el precio unitario ingresado en la compra.
+ * 3) Maneja stocks inválidos (NaN) tratándolos como 0 para evitar errores de suma.
+ *
+ * @param {string} productosTexto - Texto de los productos (línea por línea) como se guarda en la compra.
+ * @param {number} multiplicador - 1 para sumar stock (compra nueva/actualizada), -1 para restar stock (eliminar/editar).
+ * @param {object} [opciones] - Opciones de comportamiento.
+ * @param {boolean} [opciones.actualizarPrecio=false] - Si es true, actualiza el precio del producto al precio registrado en la compra.
+ */
+function ajustarStockPorCompra(productosTexto, multiplicador, opciones = {}) {
+    // Validar parámetros básicos
+    if (!productosTexto || !multiplicador) return;
+
+    // Obtener productos de localStorage
+    const productos = JSON.parse(localStorage.getItem('productos')) || [];
+    const { actualizarPrecio = false } = opciones;
+
+    // Procesar cada línea del texto de productos
+    // Formato esperado: "cantidad - nombre - ₡precio - ₡subtotal"
+    const lineas = productosTexto.split('\n').map(l => l.trim()).filter(Boolean);
+    lineas.forEach(linea => {
+        // Separar partes por " - "
+        const partes = linea.split(' - ');
+        const cantidad = parseInt(partes[0], 10);
+        const nombre = partes[1] ? partes[1].trim() : '';
+        const precioTexto = partes[2] ? partes[2].trim() : '';
+
+        // Validar que cantidad y nombre sean válidos
+        if (!nombre || isNaN(cantidad) || cantidad <= 0) return;
+
+        // Buscar producto por nombre exacto
+        const producto = productos.find(p => p.nombre === nombre);
+        if (!producto) return; // Si no existe, ignorar (no debería pasar en uso normal)
+
+        // Actualizar stock (asegurando que stockActual sea un número válido, tratando NaN como 0)
+        const stockActual = isNaN(parseInt(producto.stock, 10)) ? 0 : parseInt(producto.stock, 10);
+        const nuevoStock = Math.max(0, stockActual + multiplicador * cantidad); // No permitir stock negativo
+        producto.stock = nuevoStock;
+
+        // Actualizar precio si se solicita (solo en compras nuevas/guardadas)
+        if (actualizarPrecio) {
+            // Limpiar texto del precio (remover símbolos como ₡) y parsear como float
+            const precioParsed = parseFloat(precioTexto.replace(/[^0-9.,-]/g, '').replace(/,/g, '.'));
+            if (!isNaN(precioParsed) && precioParsed >= 0) {
+                producto.precio = precioParsed;
+            }
+        }
+    });
+
+    // Guardar cambios en localStorage
+    localStorage.setItem('productos', JSON.stringify(productos));
 }
 
 // ==================== PEDIDOS ====================
