@@ -327,64 +327,194 @@ function cargarInventario() {
     });
 }
 
-// ==================== CLIENTES ====================
-function mostrarFormCliente() {
-    clienteEditando = null;
-    document.getElementById('formulario-cliente').reset();
-    document.getElementById('form-cliente').style.display = 'block';
-    document.querySelector('#form-cliente h3').textContent = 'Nuevo Cliente';
-}
+// ==================== CLIENTES ====================                                                      local
+// function mostrarFormCliente() {
+//     clienteEditando = null;
+//     document.getElementById('formulario-cliente').reset();
+//     document.getElementById('form-cliente').style.display = 'block';
+//     document.querySelector('#form-cliente h3').textContent = 'Nuevo Cliente';
+// }
 
-function ocultarFormCliente() {
-    document.getElementById('form-cliente').style.display = 'none';
-    document.getElementById('formulario-cliente').reset();
-    clienteEditando = null;
-}
+// function ocultarFormCliente() {
+//     document.getElementById('form-cliente').style.display = 'none';
+//     document.getElementById('formulario-cliente').reset();
+//     clienteEditando = null;
+// }
 
-function guardarCliente(e) {
+// function guardarCliente(e) {
+//     e.preventDefault();
+
+//     const cliente = {
+//         id: clienteEditando?.id || Date.now(),
+//         nombre: document.getElementById('cli-nombre').value,
+//         email: document.getElementById('cli-email').value,
+//         telefono: document.getElementById('cli-telefono').value,
+//         direccion: document.getElementById('cli-direccion').value,
+//         ciudad: document.getElementById('cli-ciudad').value,
+//         estado: document.getElementById('cli-estado').value,
+//         fechaRegistro: clienteEditando?.fechaRegistro || new Date().toLocaleDateString()
+//     };
+
+//     let clientes = JSON.parse(localStorage.getItem('clientes'));
+//     // Asegurar que sea un array (corrección de compatibilidad)
+//     if (!Array.isArray(clientes)) {
+//         clientes = clientes ? Object.values(clientes) : [];
+//     }
+
+//     if (clienteEditando) {
+//         // Actualizar
+//         clientes = clientes.map(c => c.id === clienteEditando.id ? cliente : c);
+//     } else {
+//         // Crear nuevo
+//         clientes.push(cliente);
+//     }
+
+//     localStorage.setItem('clientes', JSON.stringify(clientes));
+//     ocultarFormCliente();
+//     cargarClientes();
+//     alert('Cliente guardado exitosamente');
+// }
+
+// function cargarClientes() {
+//     let clientes = JSON.parse(localStorage.getItem('clientes'));
+    
+//     // Corrección automática de datos: Si es objeto, convertir a array y guardar
+//     if (clientes && !Array.isArray(clientes)) {
+//         clientes = Object.values(clientes);
+//         localStorage.setItem('clientes', JSON.stringify(clientes));
+//     }
+//     clientes = clientes || [];
+
+//     const tbody = document.getElementById('tbody-clientes');
+//     const sinClientes = document.getElementById('sin-clientes');
+//     const filtroInput = document.getElementById('filtro-cliente-nombre');
+//     const filtro = filtroInput ? filtroInput.value.toLowerCase().trim() : '';
+
+//     if (!tbody) return;
+
+//     tbody.innerHTML = '';
+
+//     const clientesFiltrados = clientes.filter(c => c.nombre.toLowerCase().includes(filtro));
+
+//     if (clientesFiltrados.length === 0) {
+//         sinClientes.style.display = 'block';
+//         sinClientes.textContent = clientes.length === 0 ? 'No hay clientes aún. ¡Agrega uno nuevo!' : 'No se encontraron clientes con ese nombre.';
+//         return;
+//     }
+
+//     sinClientes.style.display = 'none';
+
+//     clientesFiltrados.forEach(cliente => {
+//         const row = document.createElement('tr');
+//         row.innerHTML = `
+//             <td>#${cliente.id}</td>
+//             <td>${cliente.nombre}</td>
+//             <td>${cliente.email}</td>
+//             <td>${cliente.telefono || '-'}</td>
+//             <td>${cliente.ciudad || '-'}</td>
+//             <td><span class="estado-${cliente.estado}">${cliente.estado}</span></td>
+//             <td>
+//                 <button class="btn-editar" onclick="editarCliente('${cliente.id}')">Editar</button>
+//                 <button class="btn-eliminar" onclick="eliminarCliente('${cliente.id}')">Eliminar</button>
+//             </td>
+//         `;
+//         tbody.appendChild(row);
+//     });
+// }
+
+// function editarCliente(id) {
+//     let clientes = JSON.parse(localStorage.getItem('clientes'));
+//     if (!Array.isArray(clientes)) {
+//         clientes = clientes ? Object.values(clientes) : [];
+//     }
+//     const cliente = clientes.find(c => c.id == id);
+
+//     if (!cliente) return;
+
+//     clienteEditando = cliente;
+//     document.getElementById('cli-nombre').value = cliente.nombre;
+//     document.getElementById('cli-email').value = cliente.email;
+//     document.getElementById('cli-telefono').value = cliente.telefono;
+//     document.getElementById('cli-direccion').value = cliente.direccion;
+//     document.getElementById('cli-ciudad').value = cliente.ciudad;
+//     document.getElementById('cli-estado').value = cliente.estado;
+
+//     document.querySelector('#form-cliente h3').textContent = 'Editar Cliente';
+//     document.getElementById('form-cliente').style.display = 'block';
+// }
+
+// function eliminarCliente(id) {
+//     if (!confirm('¿Estás seguro de que deseas eliminar este cliente?')) return;
+
+//     let clientes = JSON.parse(localStorage.getItem('clientes'));
+//     if (!Array.isArray(clientes)) {
+//         clientes = clientes ? Object.values(clientes) : [];
+//     }
+
+//     clientes = clientes.filter(c => c.id != id);
+//     localStorage.setItem('clientes', JSON.stringify(clientes));
+//     cargarClientes();
+// }
+
+// Guarda un cliente nuevo o actualiza uno existente en la BD                                                       BD
+async function guardarCliente(e) {
     e.preventDefault();
 
+    // Objeto con los datos del formulario
     const cliente = {
-        id: clienteEditando?.id || Date.now(),
         nombre: document.getElementById('cli-nombre').value,
-        email: document.getElementById('cli-email').value,
+        correo: document.getElementById('cli-email').value,
         telefono: document.getElementById('cli-telefono').value,
-        direccion: document.getElementById('cli-direccion').value,
         ciudad: document.getElementById('cli-ciudad').value,
-        estado: document.getElementById('cli-estado').value,
-        fechaRegistro: clienteEditando?.fechaRegistro || new Date().toLocaleDateString()
+        estado: document.getElementById('cli-estado').value
     };
 
-    let clientes = JSON.parse(localStorage.getItem('clientes'));
-    // Asegurar que sea un array (corrección de compatibilidad)
-    if (!Array.isArray(clientes)) {
-        clientes = clientes ? Object.values(clientes) : [];
-    }
+    try {
+        let respuesta;
 
-    if (clienteEditando) {
-        // Actualizar
-        clientes = clientes.map(c => c.id === clienteEditando.id ? cliente : c);
-    } else {
-        // Crear nuevo
-        clientes.push(cliente);
-    }
+        // Si hay un cliente en edición, actualiza
+        if (clienteEditando) {
+            respuesta = await fetch(`/api/clientes/${clienteEditando.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(cliente)
+            });
+        } else {
+            // Si no, crea uno nuevo
+            respuesta = await fetch('/api/clientes', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(cliente)
+            });
+        }
 
-    localStorage.setItem('clientes', JSON.stringify(clientes));
-    ocultarFormCliente();
-    cargarClientes();
-    alert('Cliente guardado exitosamente');
+        const resultado = await respuesta.json();
+
+        // Si el backend devuelve error
+        if (!resultado.ok) {
+            alert(resultado.mensaje || 'Error al guardar cliente');
+            return;
+        }
+
+        // Limpia el formulario y recarga la tabla
+        clienteEditando = null;
+        formularioCliente.reset();
+        ocultarFormCliente();
+        cargarClientes();
+        alert('Cliente guardado exitosamente');
+
+    } catch (error) {
+        console.error('Error al guardar cliente:', error);
+        alert('Error al guardar cliente');
+    }
 }
 
-function cargarClientes() {
-    let clientes = JSON.parse(localStorage.getItem('clientes'));
-    
-    // Corrección automática de datos: Si es objeto, convertir a array y guardar
-    if (clientes && !Array.isArray(clientes)) {
-        clientes = Object.values(clientes);
-        localStorage.setItem('clientes', JSON.stringify(clientes));
-    }
-    clientes = clientes || [];
-
+// Carga los clientes desde la BD y los muestra en la tabla
+async function cargarClientes() {
     const tbody = document.getElementById('tbody-clientes');
     const sinClientes = document.getElementById('sin-clientes');
     const filtroInput = document.getElementById('filtro-cliente-nombre');
@@ -394,67 +524,113 @@ function cargarClientes() {
 
     tbody.innerHTML = '';
 
-    const clientesFiltrados = clientes.filter(c => c.nombre.toLowerCase().includes(filtro));
+    try {
+        // Pide al backend la lista de clientes
+        const respuesta = await fetch('/api/clientes');
+        const clientes = await respuesta.json();
 
-    if (clientesFiltrados.length === 0) {
+        // Filtra por nombre si hay texto en el buscador
+        const clientesFiltrados = clientes.filter(c =>
+            c.NOMBRE.toLowerCase().includes(filtro)
+        );
+
+        // Si no hay resultados, muestra mensaje
+        if (clientesFiltrados.length === 0) {
+            sinClientes.style.display = 'block';
+            sinClientes.textContent = clientes.length === 0
+                ? 'No hay clientes aún. ¡Agrega uno nuevo!'
+                : 'No se encontraron clientes con ese nombre.';
+            return;
+        }
+
+        sinClientes.style.display = 'none';
+
+        // Recorre los clientes y arma las filas de la tabla
+        clientesFiltrados.forEach(cliente => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>#${cliente.ID}</td>
+                <td>${cliente.NOMBRE}</td>
+                <td>${cliente.CORREO || '-'}</td>
+                <td>${cliente.TELEFONO || '-'}</td>
+                <td>${cliente.CIUDAD || '-'}</td>
+                <td><span class="estado-${cliente.ESTADO}">${cliente.ESTADO || '-'}</span></td>
+                <td>
+                    <button class="btn-editar" onclick="editarCliente(${cliente.ID})">Editar</button>
+                    <button class="btn-eliminar" onclick="eliminarCliente(${cliente.ID})">Eliminar</button>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+
+    } catch (error) {
+        console.error('Error al cargar clientes:', error);
         sinClientes.style.display = 'block';
-        sinClientes.textContent = clientes.length === 0 ? 'No hay clientes aún. ¡Agrega uno nuevo!' : 'No se encontraron clientes con ese nombre.';
-        return;
+        sinClientes.textContent = 'Error al cargar clientes desde la base de datos.';
     }
-
-    sinClientes.style.display = 'none';
-
-    clientesFiltrados.forEach(cliente => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>#${cliente.id}</td>
-            <td>${cliente.nombre}</td>
-            <td>${cliente.email}</td>
-            <td>${cliente.telefono || '-'}</td>
-            <td>${cliente.ciudad || '-'}</td>
-            <td><span class="estado-${cliente.estado}">${cliente.estado}</span></td>
-            <td>
-                <button class="btn-editar" onclick="editarCliente('${cliente.id}')">Editar</button>
-                <button class="btn-eliminar" onclick="eliminarCliente('${cliente.id}')">Eliminar</button>
-            </td>
-        `;
-        tbody.appendChild(row);
-    });
 }
 
-function editarCliente(id) {
-    let clientes = JSON.parse(localStorage.getItem('clientes'));
-    if (!Array.isArray(clientes)) {
-        clientes = clientes ? Object.values(clientes) : [];
+// 👇 ESTA LÍNEA ES LA CLAVE (se ejecuta al cargar la página)
+document.addEventListener('DOMContentLoaded', cargarClientes);
+
+// Busca un cliente en la BD por ID y llena el formulario para editar
+async function editarCliente(id) {
+    try {
+        // Pide al backend los datos del cliente
+        const respuesta = await fetch(`/api/clientes/${id}`);
+        const cliente = await respuesta.json();
+
+        if (!cliente || cliente.ok === false) return;
+
+        // Guarda el cliente en edición
+        clienteEditando = {
+            id: cliente.ID
+        };
+
+        // Llena el formulario con los datos actuales
+        document.getElementById('cli-nombre').value = cliente.NOMBRE || '';
+        document.getElementById('cli-email').value = cliente.CORREO || '';
+        document.getElementById('cli-telefono').value = cliente.TELEFONO || '';
+        document.getElementById('cli-direccion').value = '';
+        document.getElementById('cli-ciudad').value = cliente.CIUDAD || '';
+        document.getElementById('cli-estado').value = cliente.ESTADO || 'activo';
+
+        // Muestra el formulario en modo edición
+        document.querySelector('#form-cliente h3').textContent = 'Editar Cliente';
+        document.getElementById('form-cliente').style.display = 'block';
+
+    } catch (error) {
+        console.error('Error al cargar cliente para editar:', error);
+        alert('Error al cargar cliente');
     }
-    const cliente = clientes.find(c => c.id == id);
-
-    if (!cliente) return;
-
-    clienteEditando = cliente;
-    document.getElementById('cli-nombre').value = cliente.nombre;
-    document.getElementById('cli-email').value = cliente.email;
-    document.getElementById('cli-telefono').value = cliente.telefono;
-    document.getElementById('cli-direccion').value = cliente.direccion;
-    document.getElementById('cli-ciudad').value = cliente.ciudad;
-    document.getElementById('cli-estado').value = cliente.estado;
-
-    document.querySelector('#form-cliente h3').textContent = 'Editar Cliente';
-    document.getElementById('form-cliente').style.display = 'block';
 }
 
-function eliminarCliente(id) {
+// Elimina un cliente de la BD
+async function eliminarCliente(id) {
     if (!confirm('¿Estás seguro de que deseas eliminar este cliente?')) return;
 
-    let clientes = JSON.parse(localStorage.getItem('clientes'));
-    if (!Array.isArray(clientes)) {
-        clientes = clientes ? Object.values(clientes) : [];
-    }
+    try {
+        // Envía la solicitud de eliminación al backend
+        const respuesta = await fetch(`/api/clientes/${id}`, {
+            method: 'DELETE'
+        });
 
-    clientes = clientes.filter(c => c.id != id);
-    localStorage.setItem('clientes', JSON.stringify(clientes));
-    cargarClientes();
+        const resultado = await respuesta.json();
+
+        if (!resultado.ok) {
+            alert(resultado.mensaje || 'Error al eliminar cliente');
+            return;
+        }
+
+        // Recarga la tabla luego de eliminar
+        cargarClientes();
+
+    } catch (error) {
+        console.error('Error al eliminar cliente:', error);
+        alert('Error al eliminar cliente');
+    }
 }
+
 
 // ==================== CATEGORÍAS ====================
 function mostrarFormCategoria() {

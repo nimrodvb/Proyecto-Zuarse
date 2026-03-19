@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // ==================== REGISTRO ====================
-function registrarUsuario(e) {
+async function registrarUsuario(e) {
     e.preventDefault();
 
     const email = document.getElementById('email-registro').value.trim().toLowerCase();
@@ -52,47 +52,44 @@ function registrarUsuario(e) {
         return;
     }
 
-    // Verificar si el email ya existe
-    const usuariosRegistrados = obtenerUsuariosRegistrados();
-    if (usuariosRegistrados[email]) {
-        mostrarError('Este email ya está registrado. Intenta iniciar sesión');
-        return;
+    try {
+        // Envía los datos al backend para guardarlos en la BD (tabla CLIENTES)
+        const respuesta = await fetch('/api/clientes', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                nombre: email.split('@')[0], // Se genera nombre desde el email
+                correo: email,
+                telefono: '',
+                ciudad: '',
+                estado: 'activo'
+            })
+        });
+
+        const resultado = await respuesta.json();
+
+        if (!resultado.ok) {
+            mostrarError(resultado.mensaje);
+            return;
+        }
+
+        // Mostrar éxito y redirigir
+        mostrarMensajeExito();
+
+        // Limpiar formulario
+        document.getElementById('form-registro').reset();
+
+    } catch (error) {
+        console.error('Error al registrar:', error);
+        mostrarError('Error al registrar usuario');
     }
-
-    // Obtener la pregunta
-    const pregunta = preguntasSeguridad.find(p => p.id === parseInt(preguntaId));
-
-    // Crear nuevo usuario
-    const nuevoUsuario = {
-        email: email,
-        passwordEncriptada: encriptarPassword(password),
-        preguntaSeguridad: pregunta.pregunta,
-        respuestaSeguridad: respuestaSeguridad,
-        fechaRegistro: new Date().toISOString(),
-        rol: 'usuario' // Asignación automática de rol por defecto
-    };
-
-    // Guardar usuario
-    usuariosRegistrados[email] = nuevoUsuario;
-    localStorage.setItem('usuarios_zuarse', JSON.stringify(usuariosRegistrados));
-
-    // También crear un cliente en el módulo administrativo
-    crearClienteDesdeRegistro(email, nuevoUsuario);
-
-    // Mostrar éxito y redirigir
-    mostrarMensajeExito();
-
-    // Limpiar formulario
-    document.getElementById('form-registro').reset();
 }
 
 // ==================== FUNCIONES AUXILIARES ====================
 function encriptarPassword(password) {
-    return btoa(password + SECRET_KEY); // Base64 encoding
-}
-
-function obtenerUsuariosRegistrados() {
-    return JSON.parse(localStorage.getItem('usuarios_zuarse')) || {};
+    return btoa(password + SECRET_KEY);
 }
 
 function validarEmail(email) {
@@ -133,37 +130,4 @@ function mostrarMensajeExito() {
     setTimeout(() => {
         window.location.href = 'login.html';
     }, 2000);
-}
-
-// ==================== CREAR CLIENTE AUTOMÁTICO ====================
-function crearClienteDesdeRegistro(email, usuario) {
-    let clientes = JSON.parse(localStorage.getItem('clientes'));
-    
-    // Asegurar que sea array para compatibilidad con admin
-    if (!Array.isArray(clientes)) {
-        clientes = clientes ? Object.values(clientes) : [];
-    }
-    
-    // Extraer nombre del email
-    const nombreCliente = email.split('@')[0];
-    
-    // Crear cliente
-    const nuevoCliente = {
-        id: generarIdCliente(),
-        nombre: nombreCliente,
-        email: email,
-        telefono: '',
-        direccion: '',
-        ciudad: '',
-        estado: 'activo',
-        fechaRegistro: usuario.fechaRegistro
-    };
-    
-    // Guardar cliente
-    clientes.push(nuevoCliente);
-    localStorage.setItem('clientes', JSON.stringify(clientes));
-}
-
-function generarIdCliente() {
-    return 'CLI-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5).toUpperCase();
 }

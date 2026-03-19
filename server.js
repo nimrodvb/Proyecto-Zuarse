@@ -97,3 +97,187 @@ app.listen(PORT, () => {
   // Imprime un mensaje en la consola indicando que el servidor está corriendo y en qué dirección URL.
   console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });
+
+// Ruta POST para guardar un cliente desde el registro
+app.post("/api/clientes", async (req, res) => {
+  try {
+    // Extrae los datos enviados desde el frontend
+    const { nombre, correo, telefono, ciudad, estado } = req.body;
+
+    // Conecta a la base de datos
+    const pool = await conectarDB();
+
+    // Prepara y ejecuta el INSERT en la tabla CLIENTES
+    await pool.request()
+      .input("nombre", sql.NVarChar(100), nombre)     // Nombre del cliente
+      .input("correo", sql.NVarChar(150), correo)     // Correo
+      .input("telefono", sql.NVarChar(20), telefono)  // Teléfono
+      .input("ciudad", sql.NVarChar(100), ciudad)     // Ciudad
+      .input("estado", sql.NVarChar(50), estado)      // Estado (activo/inactivo)
+      .query(`
+        INSERT INTO CLIENTES (NOMBRE, CORREO, TELEFONO, CIUDAD, ESTADO)
+        VALUES (@nombre, @correo, @telefono, @ciudad, @estado)
+      `);
+
+    // Respuesta exitosa al frontend
+    res.json({ ok: true });
+
+  } catch (error) {
+    // Muestra el error en consola del servidor
+    console.error("Error en /api/clientes:", error);
+
+    // Respuesta de error al frontend
+    res.status(500).json({ ok: false, mensaje: "Error en servidor" });
+  }
+});
+
+// ==================== CLIENTES ====================
+
+// Obtener todos los clientes
+app.get("/api/clientes", async (req, res) => {
+  try {
+    // Conecta a la base de datos
+    const pool = await conectarDB();
+
+    // Consulta todos los clientes
+    const resultado = await pool.request().query(`
+      SELECT ID, NOMBRE, CORREO, TELEFONO, CIUDAD, ESTADO
+      FROM CLIENTES
+      ORDER BY ID DESC
+    `);
+
+    // Devuelve los registros
+    res.json(resultado.recordset);
+  } catch (error) {
+    // Muestra error en consola y responde con error
+    console.error("Error en GET /api/clientes:", error);
+    res.status(500).json({ ok: false, mensaje: "Error al obtener clientes" });
+  }
+});
+
+// Obtener un cliente por ID
+app.get("/api/clientes/:id", async (req, res) => {
+  try {
+    // Obtiene el ID desde la URL
+    const { id } = req.params;
+
+    // Conecta a la base de datos
+    const pool = await conectarDB();
+
+    // Busca el cliente por ID
+    const resultado = await pool.request()
+      .input("id", sql.Int, id)
+      .query(`
+        SELECT ID, NOMBRE, CORREO, TELEFONO, CIUDAD, ESTADO
+        FROM CLIENTES
+        WHERE ID = @id
+      `);
+
+    // Si no existe, devuelve error 404
+    if (resultado.recordset.length === 0) {
+      return res.status(404).json({ ok: false, mensaje: "Cliente no encontrado" });
+    }
+
+    // Devuelve el cliente encontrado
+    res.json(resultado.recordset[0]);
+  } catch (error) {
+    // Muestra error en consola y responde con error
+    console.error("Error en GET /api/clientes/:id:", error);
+    res.status(500).json({ ok: false, mensaje: "Error al obtener cliente" });
+  }
+});
+
+// Crear un cliente nuevo
+app.post("/api/clientes", async (req, res) => {
+  try {
+    // Extrae los datos enviados desde el frontend
+    const { nombre, correo, telefono, ciudad, estado } = req.body;
+
+    // Conecta a la base de datos
+    const pool = await conectarDB();
+
+    // Inserta el nuevo cliente
+    await pool.request()
+      .input("nombre", sql.NVarChar(100), nombre)
+      .input("correo", sql.NVarChar(150), correo)
+      .input("telefono", sql.NVarChar(20), telefono)
+      .input("ciudad", sql.NVarChar(100), ciudad)
+      .input("estado", sql.NVarChar(50), estado)
+      .query(`
+        INSERT INTO CLIENTES (NOMBRE, CORREO, TELEFONO, CIUDAD, ESTADO)
+        VALUES (@nombre, @correo, @telefono, @ciudad, @estado)
+      `);
+
+    // Respuesta exitosa
+    res.json({ ok: true, mensaje: "Cliente guardado correctamente" });
+  } catch (error) {
+    // Muestra error en consola y responde con error
+    console.error("Error en POST /api/clientes:", error);
+    res.status(500).json({ ok: false, mensaje: "Error al guardar cliente" });
+  }
+});
+
+// Actualizar un cliente existente
+app.put("/api/clientes/:id", async (req, res) => {
+  try {
+    // Obtiene el ID desde la URL
+    const { id } = req.params;
+
+    // Extrae los datos enviados desde el frontend
+    const { nombre, correo, telefono, ciudad, estado } = req.body;
+
+    // Conecta a la base de datos
+    const pool = await conectarDB();
+
+    // Actualiza el cliente
+    await pool.request()
+      .input("id", sql.Int, id)
+      .input("nombre", sql.NVarChar(100), nombre)
+      .input("correo", sql.NVarChar(150), correo)
+      .input("telefono", sql.NVarChar(20), telefono)
+      .input("ciudad", sql.NVarChar(100), ciudad)
+      .input("estado", sql.NVarChar(50), estado)
+      .query(`
+        UPDATE CLIENTES
+        SET NOMBRE = @nombre,
+            CORREO = @correo,
+            TELEFONO = @telefono,
+            CIUDAD = @ciudad,
+            ESTADO = @estado
+        WHERE ID = @id
+      `);
+
+    // Respuesta exitosa
+    res.json({ ok: true, mensaje: "Cliente actualizado correctamente" });
+  } catch (error) {
+    // Muestra error en consola y responde con error
+    console.error("Error en PUT /api/clientes/:id:", error);
+    res.status(500).json({ ok: false, mensaje: "Error al actualizar cliente" });
+  }
+});
+
+// Eliminar un cliente
+app.delete("/api/clientes/:id", async (req, res) => {
+  try {
+    // Obtiene el ID desde la URL
+    const { id } = req.params;
+
+    // Conecta a la base de datos
+    const pool = await conectarDB();
+
+    // Elimina el cliente
+    await pool.request()
+      .input("id", sql.Int, id)
+      .query(`
+        DELETE FROM CLIENTES
+        WHERE ID = @id
+      `);
+
+    // Respuesta exitosa
+    res.json({ ok: true, mensaje: "Cliente eliminado correctamente" });
+  } catch (error) {
+    // Muestra error en consola y responde con error
+    console.error("Error en DELETE /api/clientes/:id:", error);
+    res.status(500).json({ ok: false, mensaje: "Error al eliminar cliente" });
+  }
+});
