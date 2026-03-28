@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - ZUARSE</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" href="login-style.css">
 </head>
 <body>
@@ -23,7 +24,12 @@
 
                 <div class="form-group">
                     <label for="login-password">Contraseña:</label>
-                    <input type="password" id="login-password" placeholder="••••••••" required>
+                    <div class="input-icon-wrapper">
+                        <input type="password" id="login-password" placeholder="••••••••" required>
+                        <button type="button" class="toggle-password" data-target="login-password" aria-label="Mostrar contraseña">
+                            <span class="material-icons">visibility</span>
+                        </button>
+                    </div>
                 </div>
 
                 <button type="submit" class="btn-login">Ingresar</button>

@@ -1,6 +1,97 @@
 // Constantes
 const SECRET_KEY = 'zuarse_secret_2024';
 
+// ==================== VALIDACIÓN DE CONTRASEÑA ====================
+const REQUISITOS_PASSWORD = {
+    mayusculas: { minimo: 2, id: 'req-mayusculas' },
+    minusculas: { minimo: 2, id: 'req-minusculas' },
+    numeros: { minimo: 2, id: 'req-numeros' },
+    especiales: { minimo: 2, id: 'req-especiales' },
+    longitud: { minimo: 12, id: 'req-longitud' }
+};
+
+function contarCoincidencias(password, regex) {
+    const matches = password.match(regex);
+    return matches ? matches.length : 0;
+}
+
+function contarEspeciales(password) {
+    const especiales = new Set(['!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '-', '_', '+', '=', '{', '}', '[', ']', '|', ':', ';', "'", '"', ',', '.', '<', '>', '/', '?', '\\', '`', '~']);
+    return Array.from(password).filter(ch => especiales.has(ch)).length;
+}
+
+function validarRequisitosPassword(password) {
+    const mayusculas = contarCoincidencias(password, /[A-Z]/g);
+    const minusculas = contarCoincidencias(password, /[a-z]/g);
+    const numeros = contarCoincidencias(password, /[0-9]/g);
+    const especiales = contarEspeciales(password);
+    const longitud = password.length;
+
+    return {
+        mayusculas: mayusculas >= REQUISITOS_PASSWORD.mayusculas.minimo,
+        minusculas: minusculas >= REQUISITOS_PASSWORD.minusculas.minimo,
+        numeros: numeros >= REQUISITOS_PASSWORD.numeros.minimo,
+        especiales: especiales >= REQUISITOS_PASSWORD.especiales.minimo,
+        longitud: longitud >= REQUISITOS_PASSWORD.longitud.minimo
+    };
+}
+
+function todosRequisitosCompletos(validacion) {
+    return validacion.mayusculas && validacion.minusculas && validacion.numeros && validacion.especiales && validacion.longitud;
+}
+
+function actualizarVisualizacionRequisitos(password) {
+    console.log('Actualizando requisitos con:', password);
+    
+    const requisitosDiv = document.getElementById('requisitos-password');
+    console.log('requisitosDiv encontrado:', !!requisitosDiv);
+    
+    if (!requisitosDiv) {
+        console.error('No se encontró elemento con id="requisitos-password"');
+        return;
+    }
+    
+    if (!password || password.length === 0) {
+        requisitosDiv.style.display = 'none';
+        return;
+    }
+
+    requisitosDiv.style.display = 'block';
+    const validacion = validarRequisitosPassword(password);
+    console.log('Validación:', validacion);
+
+    // Actualizar cada requisito individualmente
+    const requisitoKeys = ['mayusculas', 'minusculas', 'numeros', 'especiales', 'longitud'];
+    
+    requisitoKeys.forEach(key => {
+        const id = REQUISITOS_PASSWORD[key].id;
+        const elemento = document.getElementById(id);
+        
+        if (!elemento) {
+            console.warn(`No existe elemento con id="${id}"`);
+            return;
+        }
+        
+        const iconoElement = elemento.querySelector('.requisito-icon');
+        if (!iconoElement) {
+            console.warn(`No existe .requisito-icon dentro de id="${id}"`);
+            return;
+        }
+        
+        if (validacion[key]) {
+            elemento.classList.remove('requisito-no-cumplido');
+            elemento.classList.add('requisito-cumplido');
+            iconoElement.textContent = '✓';
+            console.log(`✓ ${key} cumplido`);
+        } else {
+            elemento.classList.remove('requisito-cumplido');
+            elemento.classList.add('requisito-no-cumplido');
+            iconoElement.textContent = '✗';
+            console.log(`✗ ${key} no cumplido`);
+        }
+    });
+}
+
 // Preguntas de seguridad
 const preguntasSeguridad = [
     { id: 1, pregunta: "¿Cuál es el nombre de tu mascota favorita?", respuestaEjemplo: "michi" },
@@ -12,7 +103,62 @@ const preguntasSeguridad = [
 
 // Inicialización
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('Página de registro cargada');
+    
     document.getElementById('form-registro').addEventListener('submit', registrarUsuario);
+
+    // Event listener para validación de contraseña en tiempo real
+    const inputPassword = document.getElementById('password-registro');
+    console.log('inputPassword encontrado:', !!inputPassword);
+    
+    if (inputPassword) {
+        console.log('Agregando listeners al campo de contraseña...');
+        
+        inputPassword.addEventListener('input', function() {
+            console.log('INPUT event disparado:', this.value);
+            actualizarVisualizacionRequisitos(this.value);
+        });
+        
+        inputPassword.addEventListener('focus', function() {
+            console.log('FOCUS event disparado');
+            if (this.value) {
+                const requisitosDiv = document.getElementById('requisitos-password');
+                if (requisitosDiv) {
+                    requisitosDiv.style.display = 'block';
+                }
+            }
+        });
+        
+        inputPassword.addEventListener('blur', function() {
+            console.log('BLUR event disparado');
+            if (!this.value) {
+                const requisitosDiv = document.getElementById('requisitos-password');
+                if (requisitosDiv) {
+                    requisitosDiv.style.display = 'none';
+                }
+            }
+        });
+    } else {
+        console.error('NO se encontró campo password-registro!!');
+    }
+
+    const toggles = document.querySelectorAll('.toggle-password');
+    toggles.forEach((toggle) => {
+        toggle.addEventListener('click', () => {
+            const targetId = toggle.dataset.target;
+            const targetInput = document.getElementById(targetId);
+            if (targetInput) {
+                const esPassword = targetInput.type === 'password';
+                targetInput.type = esPassword ? 'text' : 'password';
+                const icon = toggle.querySelector('.material-icons');
+                if (icon) {
+                    icon.textContent = esPassword ? 'visibility_off' : 'visibility';
+                }
+                toggle.setAttribute('aria-label', esPassword ? 'Ocultar contraseña' : 'Mostrar contraseña');
+            }
+        });
+    });
+
     configurarErrores();
 });
 
@@ -32,8 +178,16 @@ function registrarUsuario(e) {
         return;
     }
 
-    if (password.length < 6) {
-        mostrarError('La contraseña debe tener al menos 6 caracteres');
+    // Validar requisitos de contraseña
+    const validacionPassword = validarRequisitosPassword(password);
+    if (!todosRequisitosCompletos(validacionPassword)) {
+        let mensajeError = 'La contraseña no cumple con los requisitos de seguridad:\n';
+        if (!validacionPassword.mayusculas) mensajeError += '• Mínimo 2 letras mayúsculas\n';
+        if (!validacionPassword.minusculas) mensajeError += '• Mínimo 2 letras minúsculas\n';
+        if (!validacionPassword.numeros) mensajeError += '• Mínimo 2 números\n';
+        if (!validacionPassword.especiales) mensajeError += '• Mínimo 2 caracteres especiales (!@#$%^&*)\n';
+        if (!validacionPassword.longitud) mensajeError += '• Mínimo 12 caracteres';
+        mostrarError(mensajeError);
         return;
     }
 

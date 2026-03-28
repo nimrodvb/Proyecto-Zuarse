@@ -87,6 +87,23 @@ function configurarFormularios() {
     if (loginForm) {
         loginForm.addEventListener('submit', loginUnificado);
     }
+
+    const toggles = document.querySelectorAll('.toggle-password');
+    toggles.forEach((toggle) => {
+        toggle.addEventListener('click', () => {
+            const targetId = toggle.dataset.target;
+            const targetInput = document.getElementById(targetId);
+            if (targetInput) {
+                const esPassword = targetInput.type === 'password';
+                targetInput.type = esPassword ? 'text' : 'password';
+                const icon = toggle.querySelector('.material-icons');
+                if (icon) {
+                    icon.textContent = esPassword ? 'visibility_off' : 'visibility';
+                }
+                toggle.setAttribute('aria-label', esPassword ? 'Ocultar contraseña' : 'Mostrar contraseña');
+            }
+        });
+    });
 }
 
 function loginUnificado(e) {

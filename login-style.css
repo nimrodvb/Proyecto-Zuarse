@@ -216,6 +216,31 @@ body {
     font-weight: 600;
 }
 
+.input-icon-wrapper {
+    position: relative;
+}
+
+.input-icon-wrapper input {
+    padding-right: 44px;
+}
+
+.toggle-password {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: none;
+    background: transparent;
+    padding: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    color: #555;
+}
+
+.toggle-password:hover {
+    color: #13462E;
+}
+
 .login-footer {
     padding: 20px;
     text-align: center;
@@ -396,4 +421,43 @@ body {
 .login-form {
     padding: 40px;
     animation: fadeIn 0.3s ease;
+}
+
+/* REQUISITOS DE CONTRASEÑA */
+.requisitos-password {
+    background: #f5f7ff;
+    border-left: 4px solid #9BCE21;
+    padding: 12px 15px;
+    border-radius: 5px;
+    margin-top: 10px;
+    font-size: 13px;
+}
+
+.requisitos-titulo {
+    font-weight: 600;
+    color: #333;
+    margin: 0 0 8px 0;
+}
+
+.requisitos-lista {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.requisitos-lista li {
+    padding: 4px 0;
+    color: #d32f2f;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.requisitos-lista li.requisito-cumplido {
+    color: #4caf50;
+}
+
+.requisito-icon {
+    font-weight: bold;
+    min-width: 16px;
 }
