@@ -17,6 +17,12 @@ function cerrarSesionAdmin() {
     }
 }
 
+// SIDEBAR TOGGLE
+function toggleSidebar() {
+    const wrapper = document.querySelector('.admin-wrapper');
+    wrapper.classList.toggle('sidebar-collapsed');
+}
+
 // INICIALIZACIÓN
 document.addEventListener('DOMContentLoaded', function() {
     // Configurar eventos primero para asegurar que la navegación funcione
@@ -40,6 +46,10 @@ function configurarEventos() {
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', cambiarTab);
     });
+
+    // Sidebar toggle
+    const sidebarToggle = document.getElementById('sidebar-toggle');
+    if (sidebarToggle) sidebarToggle.addEventListener('click', toggleSidebar);
 
     // Productos
     const btnNuevoProducto = document.getElementById('btn-nuevo-producto');

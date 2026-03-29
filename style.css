@@ -10,10 +10,25 @@
 
 body {
     font-family: 'Poppins', sans-serif;
+    margin: 0;
+    min-height: 100vh;
 }
 
 img {
     max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+.container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 18px;
+}
+
+* {
+    box-sizing: border-box;
 }
 
 .container {
@@ -419,6 +434,12 @@ h2 {
     color: #9BCE21;
 }
 
+@media (max-width: 1200px) {
+    .container { max-width: 1000px; }
+    .header-content { padding: 20px; }
+    .box img { height: 180px; }
+}
+
 @media (max-width: 991px) {
     .menu {
        padding: 20px;
@@ -499,6 +520,27 @@ h2 {
     .testimonial {
         padding: 30px;
     }
+}
+
+@media (max-width: 700px) {
+    .header-content { padding: 20px; }
+    .header-text h1 { font-size: 36px; }
+    .header-text p { font-size: 15px; }
+    .btn-1, .btn-2, .btn-3 { width: 100%; }
+    .box { padding: 15px; }
+    .box img { height: 160px; }
+    .testimonial-content { flex-direction: column; gap: 20px; }
+}
+
+@media (max-width: 500px) {
+    .menu .navbar ul li a { padding: 12px; font-size: 16px; }
+    .header-text h1 { font-size: 30px; }
+    .header-text p { font-size: 14px; }
+    .header { padding: 40px 0 0 0; }
+    .footer-content { flex-direction: column; gap: 20px; }
+    .carrito { min-width: auto; width: 95vw; }
+}
+    
 
     .testimonial-content {
         margin-top: 20px;
@@ -519,7 +561,7 @@ h2 {
         text-align: center;
     }
 
-}
+
 
 /* ESTILOS PARA MENÚ DE USUARIO Y AUTENTICACIÓN */
 .user-menu {
