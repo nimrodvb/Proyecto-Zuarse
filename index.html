@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zuarse Market - Inicio</title>
     <link rel="stylesheet" href="style.css">
+    <!-- Dependencias para el nuevo bloque de estadísticas (Tailwind CSS y Material Symbols) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
 </head>
 <body>
   
@@ -21,6 +24,7 @@
                 <ul>
                     <li><a href="index.html">Inicio</a></li>
                     <li><a href="productos.html">Productos</a></li>
+                    <li><a href="/Servicios.html">Servicios</a></li>
                     <li><a href="contactos.html">Contacto</a></li>
                     <li id="menu-admin" style="display: none;"><a href="admin.html" style="background: #667eea; color: white; padding: 8px 15px; border-radius: 5px;">Admin</a></li>
                 </ul>
@@ -73,9 +77,52 @@
     </div>
 
     <div class="header-content container">
-        <div class="header-text">
+        <div class="header-txt">
             <span>Bienvenido a Zuarse Market</span>
             <h1>Nuestros servicios</h1>
+            
+            <!-- Bloque de Estadísticas con barra horizontal en una fila -->
+            <div class="my-10">
+                <div class="flex flex-nowrap gap-4 md:gap-6">
+                    <div class="flex-1 min-w-0 flex items-center rounded-2xl p-4 sm:p-5 bg-white border border-gray-100 shadow-sm hover:shadow-md hover:scale-[1.01] transition-all duration-300">
+                        <div class="flex items-center gap-3 w-full">
+                            <span class="material-symbols-outlined text-[#9BCE21] text-3xl flex-shrink-0">verified</span>
+                            <div class="min-w-0">
+                                <p class="text-slate-500 text-xs md:text-sm font-bold uppercase tracking-widest truncate">Experiencia</p>
+                                <p class="text-slate-900 text-2xl md:text-3xl font-extrabold truncate">20+ Años</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex-1 min-w-0 flex items-center rounded-2xl p-4 sm:p-5 bg-white border border-gray-100 shadow-sm hover:shadow-md hover:scale-[1.01] transition-all duration-300">
+                        <div class="flex items-center gap-3 w-full">
+                            <span class="material-symbols-outlined text-[#9BCE21] text-3xl flex-shrink-0">store</span>
+                            <div class="min-w-0">
+                                <p class="text-slate-500 text-xs md:text-sm font-bold uppercase tracking-widest truncate">Clientes Activos</p>
+                                <p class="text-slate-900 text-2xl md:text-3xl font-extrabold truncate">+1.353</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex-1 min-w-0 flex items-center rounded-2xl p-4 sm:p-5 bg-white border border-gray-100 shadow-sm hover:shadow-md hover:scale-[1.01] transition-all duration-300">
+                        <div class="flex items-center gap-3 w-full">
+                            <span class="material-symbols-outlined text-[#9BCE21] text-3xl flex-shrink-0">orders</span>
+                            <div class="min-w-0">
+                                <p class="text-slate-500 text-xs md:text-sm font-bold uppercase tracking-widest truncate">Productos</p>
+                                <p class="text-slate-900 text-2xl md:text-3xl font-extrabold truncate">+2.076</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex-1 min-w-0 flex items-center rounded-2xl p-4 sm:p-5 bg-white border border-gray-100 shadow-sm hover:shadow-md hover:scale-[1.01] transition-all duration-300">
+                        <div class="flex items-center gap-3 w-full">
+                            <span class="material-symbols-outlined text-[#9BCE21] text-3xl flex-shrink-0">public</span>
+                            <div class="min-w-0">
+                                <p class="text-slate-500 text-xs md:text-sm font-bold uppercase tracking-widest truncate">Cobertura</p>
+                                <p class="text-slate-900 text-2xl md:text-3xl font-extrabold truncate">Zona Sur</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <p>
             En Zuarse, vos sos lo más importante. Por eso trabajamos cada día para ofrecerte productos de calidad
             y un servicio en línea rápido y confiable, para que hagás tus compras desde donde estés, de forma
@@ -86,10 +133,7 @@
                 <a href="#" class="btn-1">Leer mas</a>
             </div>
         </div>
-        <div class="header-img">
-            <img src="images/bag.png" alt="">
-        </div>
-    </div>
+       
    
 
     </header>
