@@ -327,154 +327,63 @@ function cargarInventario() {
     });
 }
 
-// ==================== CLIENTES ====================                                                      local
-// function mostrarFormCliente() {
-//     clienteEditando = null;
-//     document.getElementById('formulario-cliente').reset();
-//     document.getElementById('form-cliente').style.display = 'block';
-//     document.querySelector('#form-cliente h3').textContent = 'Nuevo Cliente';
-// }
+// ================================================================================= CLIENTES ==============================================================                                                      local
 
-// function ocultarFormCliente() {
-//     document.getElementById('form-cliente').style.display = 'none';
-//     document.getElementById('formulario-cliente').reset();
-//     clienteEditando = null;
-// }
 
-// function guardarCliente(e) {
-//     e.preventDefault();
+// ------------------------------------------------------------------------------------ MOSTRAR CLIENTE---------------------------------------------------------
+function mostrarFormCliente() {
+    // Limpia el cliente en edición
+    clienteEditando = null;
 
-//     const cliente = {
-//         id: clienteEditando?.id || Date.now(),
-//         nombre: document.getElementById('cli-nombre').value,
-//         email: document.getElementById('cli-email').value,
-//         telefono: document.getElementById('cli-telefono').value,
-//         direccion: document.getElementById('cli-direccion').value,
-//         ciudad: document.getElementById('cli-ciudad').value,
-//         estado: document.getElementById('cli-estado').value,
-//         fechaRegistro: clienteEditando?.fechaRegistro || new Date().toLocaleDateString()
-//     };
+    // Limpia el formulario
+    document.getElementById('formulario-cliente').reset();
 
-//     let clientes = JSON.parse(localStorage.getItem('clientes'));
-//     // Asegurar que sea un array (corrección de compatibilidad)
-//     if (!Array.isArray(clientes)) {
-//         clientes = clientes ? Object.values(clientes) : [];
-//     }
+    // Muestra el formulario
+    document.getElementById('form-cliente').style.display = 'block';
 
-//     if (clienteEditando) {
-//         // Actualizar
-//         clientes = clientes.map(c => c.id === clienteEditando.id ? cliente : c);
-//     } else {
-//         // Crear nuevo
-//         clientes.push(cliente);
-//     }
+    // Cambia el título
+    document.querySelector('#form-cliente h3').textContent = 'Nuevo Cliente';
+}
 
-//     localStorage.setItem('clientes', JSON.stringify(clientes));
-//     ocultarFormCliente();
-//     cargarClientes();
-//     alert('Cliente guardado exitosamente');
-// }
+// Función para ocultar el formulario de cliente
+function ocultarFormCliente() {
+    // Oculta el formulario
+    document.getElementById('form-cliente').style.display = 'none';
 
-// function cargarClientes() {
-//     let clientes = JSON.parse(localStorage.getItem('clientes'));
-    
-//     // Corrección automática de datos: Si es objeto, convertir a array y guardar
-//     if (clientes && !Array.isArray(clientes)) {
-//         clientes = Object.values(clientes);
-//         localStorage.setItem('clientes', JSON.stringify(clientes));
-//     }
-//     clientes = clientes || [];
+    // Limpia los campos
+    document.getElementById('formulario-cliente').reset();
 
-//     const tbody = document.getElementById('tbody-clientes');
-//     const sinClientes = document.getElementById('sin-clientes');
-//     const filtroInput = document.getElementById('filtro-cliente-nombre');
-//     const filtro = filtroInput ? filtroInput.value.toLowerCase().trim() : '';
+    // Limpia el modo edición
+    clienteEditando = null;
+}
 
-//     if (!tbody) return;
 
-//     tbody.innerHTML = '';
-
-//     const clientesFiltrados = clientes.filter(c => c.nombre.toLowerCase().includes(filtro));
-
-//     if (clientesFiltrados.length === 0) {
-//         sinClientes.style.display = 'block';
-//         sinClientes.textContent = clientes.length === 0 ? 'No hay clientes aún. ¡Agrega uno nuevo!' : 'No se encontraron clientes con ese nombre.';
-//         return;
-//     }
-
-//     sinClientes.style.display = 'none';
-
-//     clientesFiltrados.forEach(cliente => {
-//         const row = document.createElement('tr');
-//         row.innerHTML = `
-//             <td>#${cliente.id}</td>
-//             <td>${cliente.nombre}</td>
-//             <td>${cliente.email}</td>
-//             <td>${cliente.telefono || '-'}</td>
-//             <td>${cliente.ciudad || '-'}</td>
-//             <td><span class="estado-${cliente.estado}">${cliente.estado}</span></td>
-//             <td>
-//                 <button class="btn-editar" onclick="editarCliente('${cliente.id}')">Editar</button>
-//                 <button class="btn-eliminar" onclick="eliminarCliente('${cliente.id}')">Eliminar</button>
-//             </td>
-//         `;
-//         tbody.appendChild(row);
-//     });
-// }
-
-// function editarCliente(id) {
-//     let clientes = JSON.parse(localStorage.getItem('clientes'));
-//     if (!Array.isArray(clientes)) {
-//         clientes = clientes ? Object.values(clientes) : [];
-//     }
-//     const cliente = clientes.find(c => c.id == id);
-
-//     if (!cliente) return;
-
-//     clienteEditando = cliente;
-//     document.getElementById('cli-nombre').value = cliente.nombre;
-//     document.getElementById('cli-email').value = cliente.email;
-//     document.getElementById('cli-telefono').value = cliente.telefono;
-//     document.getElementById('cli-direccion').value = cliente.direccion;
-//     document.getElementById('cli-ciudad').value = cliente.ciudad;
-//     document.getElementById('cli-estado').value = cliente.estado;
-
-//     document.querySelector('#form-cliente h3').textContent = 'Editar Cliente';
-//     document.getElementById('form-cliente').style.display = 'block';
-// }
-
-// function eliminarCliente(id) {
-//     if (!confirm('¿Estás seguro de que deseas eliminar este cliente?')) return;
-
-//     let clientes = JSON.parse(localStorage.getItem('clientes'));
-//     if (!Array.isArray(clientes)) {
-//         clientes = clientes ? Object.values(clientes) : [];
-//     }
-
-//     clientes = clientes.filter(c => c.id != id);
-//     localStorage.setItem('clientes', JSON.stringify(clientes));
-//     cargarClientes();
-// }
-
-// Guarda un cliente nuevo o actualiza uno existente en la BD                                                       BD
+// ----------------------------------------------------------------------------------- GUARDAR CLIENTE---------------------------------------------------------
 async function guardarCliente(e) {
+    // Evita que el formulario recargue la página
     e.preventDefault();
 
-    // Objeto con los datos del formulario
+    // Crea un objeto con los datos del formulario
     const cliente = {
         nombre: document.getElementById('cli-nombre').value,
         correo: document.getElementById('cli-email').value,
         telefono: document.getElementById('cli-telefono').value,
+        direccion: document.getElementById('cli-direccion').value,
         ciudad: document.getElementById('cli-ciudad').value,
         estado: document.getElementById('cli-estado').value
     };
 
     try {
+        // Variable para guardar la respuesta del backend
         let respuesta;
 
-        // Si hay un cliente en edición, actualiza
+        // Muestra en consola qué ID se va a usar para guardar
+        console.log("clienteEditando:", clienteEditando);
+        console.log("datos enviados:", cliente);
+
+        // Si existe un ID en clienteEditando, entonces se actualiza
         if (clienteEditando) {
-            respuesta = await fetch(`/api/clientes/${clienteEditando.id}`, {
+            respuesta = await fetch(`/api/clientes/${clienteEditando}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json'
@@ -482,7 +391,7 @@ async function guardarCliente(e) {
                 body: JSON.stringify(cliente)
             });
         } else {
-            // Si no, crea uno nuevo
+            // Si no existe ID, se crea un cliente nuevo
             respuesta = await fetch('/api/clientes', {
                 method: 'POST',
                 headers: {
@@ -492,28 +401,46 @@ async function guardarCliente(e) {
             });
         }
 
+        // Convierte la respuesta a JSON
         const resultado = await respuesta.json();
 
-        // Si el backend devuelve error
+        // Muestra la respuesta del backend en consola
+        console.log("respuesta backend:", resultado);
+
+        // Si el backend devolvió error, lo muestra
         if (!resultado.ok) {
             alert(resultado.mensaje || 'Error al guardar cliente');
             return;
         }
 
-        // Limpia el formulario y recarga la tabla
+        // Limpia la variable de edición
         clienteEditando = null;
-        formularioCliente.reset();
+
+        // Limpia el formulario
+        document.getElementById('formulario-cliente').reset();
+
+        // Recarga la tabla
+        await cargarClientes();
+
+        // Oculta el formulario
         ocultarFormCliente();
-        cargarClientes();
+
+        // Devuelve el título original
+        document.querySelector('#form-cliente h3').textContent = 'Formulario de Cliente';
+
+        // Mensaje de éxito
         alert('Cliente guardado exitosamente');
 
     } catch (error) {
+        // Muestra error real en consola
         console.error('Error al guardar cliente:', error);
         alert('Error al guardar cliente');
     }
 }
 
-// Carga los clientes desde la BD y los muestra en la tabla
+
+
+// // ------------------------------------------------------------------------------ CARGAR CLIENTES EN TABLA ---------------------------------------------------------
 async function cargarClientes() {
     const tbody = document.getElementById('tbody-clientes');
     const sinClientes = document.getElementById('sin-clientes');
@@ -547,12 +474,16 @@ async function cargarClientes() {
 
         // Recorre los clientes y arma las filas de la tabla
         clientesFiltrados.forEach(cliente => {
+
+        console.log(cliente);
+
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>#${cliente.ID}</td>
                 <td>${cliente.NOMBRE}</td>
                 <td>${cliente.CORREO || '-'}</td>
                 <td>${cliente.TELEFONO || '-'}</td>
+                <td>${cliente.DIRECCION || '-'}</td>
                 <td>${cliente.CIUDAD || '-'}</td>
                 <td><span class="estado-${cliente.ESTADO}">${cliente.ESTADO || '-'}</span></td>
                 <td>
@@ -570,10 +501,7 @@ async function cargarClientes() {
     }
 }
 
-// 👇 ESTA LÍNEA ES LA CLAVE (se ejecuta al cargar la página)
-document.addEventListener('DOMContentLoaded', cargarClientes);
-
-// Busca un cliente en la BD por ID y llena el formulario para editar
+// ------------------------------------------------------------------------------- LLENAR EL FORMULARIO DE CLIENTE ---------------------------------------------------------
 async function editarCliente(id) {
     try {
         // Pide al backend los datos del cliente
@@ -582,16 +510,14 @@ async function editarCliente(id) {
 
         if (!cliente || cliente.ok === false) return;
 
-        // Guarda el cliente en edición
-        clienteEditando = {
-            id: cliente.ID
-        };
+        // Guarda el ID del cliente en edición
+        clienteEditando = cliente.ID;
 
         // Llena el formulario con los datos actuales
         document.getElementById('cli-nombre').value = cliente.NOMBRE || '';
         document.getElementById('cli-email').value = cliente.CORREO || '';
         document.getElementById('cli-telefono').value = cliente.TELEFONO || '';
-        document.getElementById('cli-direccion').value = '';
+        document.getElementById('cli-direccion').value = cliente.DIRECCION || '';
         document.getElementById('cli-ciudad').value = cliente.CIUDAD || '';
         document.getElementById('cli-estado').value = cliente.ESTADO || 'activo';
 
@@ -605,7 +531,7 @@ async function editarCliente(id) {
     }
 }
 
-// Elimina un cliente de la BD
+// ------------------------------------------------------------------------------------------- ELIMINAR CLIENTE ---------------------------------------------------------
 async function eliminarCliente(id) {
     if (!confirm('¿Estás seguro de que deseas eliminar este cliente?')) return;
 
@@ -630,9 +556,9 @@ async function eliminarCliente(id) {
         alert('Error al eliminar cliente');
     }
 }
+// ================================================================================= CLIENTES ==============================================================
 
-
-// ==================== CATEGORÍAS ====================
+// ================================================================================ CATEGORÍAS =============================================================
 function mostrarFormCategoria() {
     categoriaEditando = null;
     const form = document.getElementById('formulario-categoria');
