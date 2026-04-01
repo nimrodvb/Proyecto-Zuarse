@@ -89,64 +89,57 @@ function configurarFormularios() {
     }
 }
 
-function loginUnificado(e) {
+// ========================================================================================== LOGIN UNIFICADO CON BASE DE DATOS ===========================================================
+async function loginUnificado(e) {
+    // Evita que el formulario recargue la página
     e.preventDefault();
 
+    // Obtiene los datos escritos por el usuario
     const identificador = document.getElementById('login-identificador').value.trim().toLowerCase();
     const password = document.getElementById('login-password').value;
     const recordar = document.getElementById('login-recordar').checked;
 
-    // Validación simple
+    // Valida que ambos campos tengan contenido
     if (!identificador || !password) {
         mostrarError('Por favor completa todos los campos');
         return;
     }
 
+    // Encripta la contraseña exactamente igual que en el registro
     const passwordEncriptada = encriptarPassword(password);
 
-    // ================== 1. INTENTO DE LOGIN: ADMIN PRINCIPAL O EMPLEADOS ==================
-    
-    // A) Buscar en lista de empleados creados desde el panel
-    const empleados = JSON.parse(localStorage.getItem('empleados_zuarse')) || [];
-    const empleadoEncontrado = empleados.find(emp => emp.usuario === identificador && emp.passwordEncriptada === passwordEncriptada);
+    try {
+        // Envía los datos al backend para validar contra SQL Server
+        const respuesta = await fetch('http://localhost:3000/api/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                identificador: identificador,
+                contrasena: passwordEncriptada
+            })
+        });
 
-    if (empleadoEncontrado) {
-        crearSesion(empleadoEncontrado.usuario, empleadoEncontrado.rol || 'cliente', recordar);
-        return;
-    }
+        // Convierte la respuesta a JSON
+        const resultado = await respuesta.json();
 
-    // B) Buscar Admin Principal (Legacy / Hardcoded)
-    const adminEnLocalStorage = JSON.parse(localStorage.getItem('admin_zuarse'));
-    let esAdmin = false;
-
-    // Verificar si coincide con admin guardado o por defecto
-    if (adminEnLocalStorage && adminEnLocalStorage.usuario === identificador) {
-        if (adminEnLocalStorage.passwordEncriptada === passwordEncriptada) esAdmin = true;
-    } else if (identificador === adminRegistrado.usuario) {
-        if (adminRegistrado.passwordEncriptada === passwordEncriptada) esAdmin = true;
-    }
-
-    if (esAdmin) {
-        crearSesion(identificador, 'admin', recordar);
-        return;
-    }
-
-    // ================== 2. INTENTO DE LOGIN COMO USUARIO ==================
-    const usuariosRegistrados = JSON.parse(localStorage.getItem('usuarios_zuarse')) || {};
-
-    // Verificar si existe el identificador (email) en la lista de usuarios
-    if (identificador in usuariosRegistrados) {
-        const userData = usuariosRegistrados[identificador];
-        
-        // Verificar contraseña
-        if (userData.passwordEncriptada === passwordEncriptada) {
-            crearSesion(identificador, 'usuario', recordar);
+        // Si el backend devuelve error, muestra mensaje
+        if (!resultado.ok) {
+            mostrarError(resultado.mensaje || 'Usuario o contraseña incorrectos');
             return;
         }
-    }
 
-    // Si llegamos aquí, las credenciales no coincidieron con ninguno
-    mostrarError('Usuario, email o contraseña incorrectos');
+        // Si el login fue correcto, crea la sesión usando el tipo devuelto por la BD
+        crearSesion(resultado.usuario, resultado.tipo, recordar);
+
+    } catch (error) {
+        // Muestra error en consola para depuración
+        console.error('Error en login:', error);
+
+        // Muestra error amigable al usuario
+        mostrarError('Error al iniciar sesión');
+    }
 }
 
 function crearSesion(identificador, rol, recordar) {

@@ -855,3 +855,83 @@ app.delete("/api/productos/:id", async (req, res) => {
 
 
 
+// =========================================================================================================== LOGIN ==================================================================================
+
+
+// ================= LOGIN CON BASE DE DATOS =================
+app.post("/api/login", async (req, res) => {
+  try {
+    // 1. Obtener datos enviados desde el frontend
+    const { identificador, contrasena } = req.body;
+
+    // 2. Validar que vengan los datos
+    if (!identificador || !contrasena) {
+      return res.status(400).json({
+        ok: false,
+        mensaje: "Identificador y contraseña son obligatorios"
+      });
+    }
+
+    // 3. Conectarse a SQL Server
+    const pool = await conectarDB();
+
+    // ================= BUSCAR EN USUARIOS (ADMIN) =================
+    const usuarioResult = await pool.request()
+      .input("nombre", sql.NVarChar(100), identificador) // usuario admin
+      .input("contrasena", sql.NVarChar(100), contrasena) // contraseña ya encriptada
+      .query(`
+        SELECT TOP 1 ID, NOMBRE
+        FROM USUARIOS
+        WHERE NOMBRE = @nombre AND CONTRASENA = @contrasena
+      `);
+
+    // 4. Si lo encuentra como ADMIN
+    if (usuarioResult.recordset.length > 0) {
+      return res.json({
+        ok: true,
+        tipo: "admin", // acceso a panel
+        usuario: identificador
+      });
+    }
+
+  // ================= BUSCAR EN CLIENTES =================
+// Busca al cliente por CORREO o por NOMBRE para permitir login con cualquiera de los dos
+const clienteResult = await pool.request()
+  .input("identificador", sql.NVarChar(150), identificador) // puede ser correo o nombre
+  .input("contrasena", sql.NVarChar(100), contrasena) // contraseña encriptada
+  .query(`
+    SELECT TOP 1 ID, NOMBRE, CORREO
+    FROM CLIENTES
+    WHERE (CORREO = @identificador OR NOMBRE = @identificador)
+      AND CONTRASENA = @contrasena
+  `);
+
+    // 5. Si lo encuentra como CLIENTE
+    if (clienteResult.recordset.length > 0) {
+      return res.json({
+        ok: true,
+        tipo: "usuario", // acceso a tienda
+        usuario: identificador
+      });
+    }
+
+    // 6. Si no encontró nada
+    return res.status(401).json({
+      ok: false,
+      mensaje: "Usuario o contraseña incorrectos"
+    });
+
+  } catch (error) {
+    console.error("Error en /api/login:", error);
+
+    res.status(500).json({
+      ok: false,
+      mensaje: "Error en servidor"
+    });
+  }
+});
+
+
+// ===========================================================================================================^ LOGIN ^==================================================================================
+
+
