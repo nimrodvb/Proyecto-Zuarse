@@ -98,7 +98,7 @@ app.listen(PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });
 
-// ==================================================================================== CLIENTES ============================================================
+// ============================================================================================================== CLIENTES =================================================================================
 
 // Ruta POST para guardar un cliente nuevo desde el formulario
 app.post("/api/clientes", async (req, res) => {
@@ -145,7 +145,7 @@ app.post("/api/clientes", async (req, res) => {
 
 
 
-// ------------------------------------------------------------------------ OBTENER CLIENTES DE SQL---------------------------------------------------------
+// ---------------------------------------------------------------------------------------------- OBTENER CLIENTES DE SQL-----------------------------------------------------------------------------------
 
 app.get("/api/clientes", async (req, res) => {
 
@@ -188,7 +188,7 @@ app.get("/api/clientes", async (req, res) => {
 
 
 
-// ------------------------------------------------------------------------ OBTENER CLIENTES POR ID--------------------------------------------------------   
+// ------------------------------------------------------------------------------------------ OBTENER CLIENTES POR ID----------------------------------------------------------------------------------------   
 
 app.get("/api/clientes/:id", async (req, res) => {
   try {
@@ -241,7 +241,7 @@ app.get("/api/clientes/:id", async (req, res) => {
 
 
 
-// ------------------------------------------------------------------------ CREAR UN NUEVO CLIENTE ---------------------------------------------------------
+// -------------------------------------------------------------------------------------------- CREAR UN NUEVO CLIENTE --------------------------------------------------------------------------------------
 app.post("/api/clientes", async (req, res) => {
   try {
     // Extrae los datos enviados desde el frontend
@@ -274,7 +274,7 @@ app.post("/api/clientes", async (req, res) => {
 
 
 
-// ------------------------------------------------------------------------ ACTUALIZAR UN NUEVO CLIENTE ---------------------------------------------------------
+// ------------------------------------------------------------------------------------------ ACTUALIZAR UN NUEVO CLIENTE ------------------------------------------------------------------------------------
 app.put("/api/clientes/:id", async (req, res) => {
   try {
     // Obtiene el ID enviado en la URL
@@ -343,7 +343,7 @@ app.put("/api/clientes/:id", async (req, res) => {
 
 
 
-// ------------------------------------------------------------------------ ELIMINAR UN CLIENTE---------------------------------------------------------
+// --------------------------------------------------------------------------------------------------- ELIMINAR UN CLIENTE----------------------------------------------------------------------------------
 app.delete("/api/clientes/:id", async (req, res) => {
   try {
     // Obtiene el ID desde la URL
@@ -369,4 +369,236 @@ app.delete("/api/clientes/:id", async (req, res) => {
   }
 });
 
-// ==================================================================================== CLIENTES ============================================================
+// ================================================================================================================ CLIENTES ===================================================================================
+
+
+
+// ================================================================================================================ CATEGORIAS ==================================================================================
+
+
+// ------------------------------------------------------------------------------------------------------------ AGREGAR NUEVA CATEGORÍA ----------------------------------------------------------------------------
+
+
+// Ruta para guardar una nueva categoría en la base de datos
+app.post("/api/categorias", async (req, res) => {
+  try {
+    // Extrae los datos enviados desde el frontend
+    const { nombre, descripcion } = req.body;
+
+    // Valida que el nombre venga con contenido
+    if (!nombre || !nombre.trim()) {
+      return res.status(400).json({
+        ok: false,
+        mensaje: "El nombre de la categoría es obligatorio"
+      });
+    }
+
+    // Usa la función de conexión que ya existe en tu proyecto
+    const pool = await conectarDB();
+
+    // Inserta la categoría en la tabla CATEGORIAS
+    await pool.request()
+      // Parámetro para el nombre
+      .input("nombre", sql.NVarChar(100), nombre.trim())
+
+      // Parámetro para la descripción
+      // Si viene vacía, se guarda como null
+      .input("descripcion", sql.NVarChar(255), descripcion ? descripcion.trim() : null)
+
+      // Consulta SQL para insertar los datos
+      .query(`
+        INSERT INTO CATEGORIAS (NOMBRE, DESCRIPCION)
+        VALUES (@nombre, @descripcion)
+      `);
+
+    // Respuesta exitosa
+    res.json({
+      ok: true,
+      mensaje: "Categoría guardada correctamente"
+    });
+
+  } catch (error) {
+    // Muestra el error en consola del servidor
+    console.error("Error al insertar categoría:", error);
+
+    // Envía respuesta de error al frontend
+    res.status(500).json({
+      ok: false,
+      mensaje: "Error al guardar la categoría"
+    });
+  }
+});
+
+
+// ------------------------------------------------------------------------------------------------------------ AGREGAR NUEVA CATEGORÍA ----------------------------------------------------------------------------
+
+
+
+// ------------------------------------------------------------------------------------------------------------ CARGAR CATEGORIA ----------------------------------------------------------------------------
+
+
+// Ruta para obtener todas las categorías desde la base de datos
+app.get("/api/categorias", async (req, res) => {
+  try {
+    // Se establece la conexión con la base de datos
+    const pool = await conectarDB();
+
+    // Se consultan todas las categorías ordenadas por ID ascendente
+    const result = await pool.request().query(`
+      SELECT ID, NOMBRE, DESCRIPCION
+      FROM CATEGORIAS
+      ORDER BY ID ASC
+    `);
+
+    // Se devuelve la lista de categorías al frontend
+    res.json({
+      ok: true,
+      categorias: result.recordset
+    });
+
+  } catch (error) {
+    // Muestra el error en consola para depuración
+    console.error("Error en /api/categorias:", error);
+
+    // Respuesta de error al cliente
+    res.status(500).json({
+      ok: false,
+      mensaje: "Error al obtener las categorías"
+    });
+  }
+});
+
+
+// ------------------------------------------------------------------------------------------------------------ CARGAR CATEGORIA ----------------------------------------------------------------------------
+
+
+
+// ----------------------------------------------------------------------------------------------------------- ACTUALIZAR CATEGORÍA -------------------------------------------------------------------------
+// Ruta para actualizar una categoría existente en la base de datos
+app.put("/api/categorias/:id", async (req, res) => {
+  try {
+    // Obtiene el id desde la URL
+    const id = parseInt(req.params.id);
+
+    // Obtiene los datos enviados desde el frontend
+    const { nombre, descripcion } = req.body;
+
+    // Valida que el id sea correcto
+    if (!id || isNaN(id)) {
+      return res.status(400).json({
+        ok: false,
+        mensaje: "ID de categoría no válido"
+      });
+    }
+
+    // Valida que el nombre no venga vacío
+    if (!nombre || !nombre.trim()) {
+      return res.status(400).json({
+        ok: false,
+        mensaje: "El nombre de la categoría es obligatorio"
+      });
+    }
+
+    // Se conecta a la base de datos
+    const pool = await conectarDB();
+
+    // Ejecuta la actualización
+    const result = await pool.request()
+      .input("id", sql.Int, id)
+      .input("nombre", sql.NVarChar(100), nombre.trim())
+      .input("descripcion", sql.NVarChar(255), descripcion ? descripcion.trim() : null)
+      .query(`
+        UPDATE CATEGORIAS
+        SET NOMBRE = @nombre,
+            DESCRIPCION = @descripcion
+        WHERE ID = @id
+      `);
+
+    // Si no se actualizó ninguna fila, la categoría no existía
+    if (result.rowsAffected[0] === 0) {
+      return res.status(404).json({
+        ok: false,
+        mensaje: "No se encontró la categoría a actualizar"
+      });
+    }
+
+    // Respuesta exitosa
+    res.json({
+      ok: true,
+      mensaje: "Categoría actualizada correctamente"
+    });
+
+  } catch (error) {
+    console.error("Error en PUT /api/categorias/:id:", error);
+    res.status(500).json({
+      ok: false,
+      mensaje: "Error al actualizar la categoría"
+    });
+  }
+});
+
+
+// ----------------------------------------------------------------------------------------------------------- ACTUALIZAR CATEGORÍA -------------------------------------------------------------------------
+
+
+
+
+// ----------------------------------------------------------------------------------------------------------- ELIMINAR CATEGORÍA -------------------------------------------------------------------------
+
+
+
+// Ruta para eliminar una categoría existente de la base de datos
+app.delete("/api/categorias/:id", async (req, res) => {
+  try {
+    // Obtiene el id desde la URL
+    const id = parseInt(req.params.id);
+
+    // Valida que el id sea correcto
+    if (!id || isNaN(id)) {
+      return res.status(400).json({
+        ok: false,
+        mensaje: "ID de categoría no válido"
+      });
+    }
+
+    // Se conecta a la base de datos
+    const pool = await conectarDB();
+
+    // Ejecuta el DELETE
+    const result = await pool.request()
+      .input("id", sql.Int, id)
+      .query(`
+        DELETE FROM CATEGORIAS
+        WHERE ID = @id
+      `);
+
+    // Si no se eliminó ninguna fila, no existía
+    if (result.rowsAffected[0] === 0) {
+      return res.status(404).json({
+        ok: false,
+        mensaje: "No se encontró la categoría a eliminar"
+      });
+    }
+
+    // Respuesta exitosa
+    res.json({
+      ok: true,
+      mensaje: "Categoría eliminada correctamente"
+    });
+
+  } catch (error) {
+    console.error("Error en DELETE /api/categorias/:id:", error);
+    res.status(500).json({
+      ok: false,
+      mensaje: "Error al eliminar la categoría"
+    });
+  }
+});
+
+
+// ----------------------------------------------------------------------------------------------------------- ELIMINAR CATEGORÍA -------------------------------------------------------------------------
+
+
+
+// =========================================================================================================== CATEGORIAS ==================================================================================
+

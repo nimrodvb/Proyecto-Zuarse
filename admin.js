@@ -4,9 +4,11 @@ let productoEditando = null;
 let clienteEditando = null;
 let pedidoVisualizando = null;
 let categoriaEditando = null;
+let categoriasCargadas = [];
 let proveedorEditando = null;
 let compraEditando = null;
 let empleadoEditando = null;
+
 
 // FUNCIONES DE SESIÓN
 function cerrarSesionAdmin() {
@@ -144,7 +146,7 @@ function cambiarTab(e) {
     document.getElementById(tabNombre).classList.add('active');
 }
 
-// ==================== PRODUCTOS ====================
+// =============================================================================================================== PRODUCTOS ===============================================================================
 function mostrarFormProducto() {
     productoEditando = null;
     document.getElementById('formulario-producto').reset();
@@ -327,10 +329,10 @@ function cargarInventario() {
     });
 }
 
-// ================================================================================= CLIENTES ==============================================================                                                      local
+// =========================================================================================================== CLIENTES =====================================================================================                                                      local
 
 
-// ------------------------------------------------------------------------------------ MOSTRAR CLIENTE---------------------------------------------------------
+// -------------------------------------------------------------------------------------------------- MOSTRAR CLIENTE------------------------------------------------------------------------------------------
 function mostrarFormCliente() {
     // Limpia el cliente en edición
     clienteEditando = null;
@@ -357,8 +359,12 @@ function ocultarFormCliente() {
     clienteEditando = null;
 }
 
+// -------------------------------------------------------------------------------------------------- MOSTRAR CLIENTE------------------------------------------------------------------------------------------
 
-// ----------------------------------------------------------------------------------- GUARDAR CLIENTE---------------------------------------------------------
+
+
+
+// ---------------------------------------------------------------------------------------------------- GUARDAR CLIENTE--------------------------------------------------------------------------------------
 async function guardarCliente(e) {
     // Evita que el formulario recargue la página
     e.preventDefault();
@@ -438,9 +444,10 @@ async function guardarCliente(e) {
     }
 }
 
+// -------------------------------------------------------------------------------------------------- CARGAR CLIENTE------------------------------------------------------------------------------------------
 
 
-// // ------------------------------------------------------------------------------ CARGAR CLIENTES EN TABLA ---------------------------------------------------------
+// -------------------------------------------------------------------------------------------- CARGAR CLIENTES EN TABLA --------------------------------------------------------------------------------
 async function cargarClientes() {
     const tbody = document.getElementById('tbody-clientes');
     const sinClientes = document.getElementById('sin-clientes');
@@ -501,7 +508,12 @@ async function cargarClientes() {
     }
 }
 
-// ------------------------------------------------------------------------------- LLENAR EL FORMULARIO DE CLIENTE ---------------------------------------------------------
+
+// -------------------------------------------------------------------------------------------- CARGAR CLIENTES EN TABLA --------------------------------------------------------------------------------
+
+
+
+// ----------------------------------------------------------------------------------------- LLENAR EL FORMULARIO DE CLIENTE -----------------------------------------------------------------------------
 async function editarCliente(id) {
     try {
         // Pide al backend los datos del cliente
@@ -531,7 +543,12 @@ async function editarCliente(id) {
     }
 }
 
-// ------------------------------------------------------------------------------------------- ELIMINAR CLIENTE ---------------------------------------------------------
+
+// ----------------------------------------------------------------------------------------- LLENAR EL FORMULARIO DE CLIENTE -----------------------------------------------------------------------------
+
+
+
+// --------------------------------------------------------------------------------------------- ELIMINAR CLIENTE -----------------------------------------------------------------------------------------
 async function eliminarCliente(id) {
     if (!confirm('¿Estás seguro de que deseas eliminar este cliente?')) return;
 
@@ -556,9 +573,16 @@ async function eliminarCliente(id) {
         alert('Error al eliminar cliente');
     }
 }
-// ================================================================================= CLIENTES ==============================================================
 
-// ================================================================================ CATEGORÍAS =============================================================
+
+// --------------------------------------------------------------------------------------------- ELIMINAR CLIENTE -----------------------------------------------------------------------------------------
+
+
+// ================================================================================================== CLIENTES =============================================================================================
+
+
+
+// ================================================================================================== CATEGORÍAS ============================================================================================
 function mostrarFormCategoria() {
     categoriaEditando = null;
     const form = document.getElementById('formulario-categoria');
@@ -577,7 +601,14 @@ function ocultarFormCategoria() {
     categoriaEditando = null;
 }
 
-function guardarCategoria(e) {
+
+//------------------------------------------------------------------------------------------------ GUARDAR O ACTUALIZAR CATEGORIA ----------------------------------------------------------------------------------------
+
+
+
+// Función para guardar una categoría
+// Función para guardar o actualizar una categoría
+async function guardarCategoria(e) {
     e.preventDefault();
 
     const nombre = document.getElementById('cat-nombre').value.trim();
@@ -588,118 +619,268 @@ function guardarCategoria(e) {
         return;
     }
 
-    const categoria = {
-        id: categoriaEditando?.id || Date.now(),
-        nombre: nombre,
-        descripcion: descripcion,
-        fechaCreacion: categoriaEditando?.fechaCreacion || new Date().toLocaleDateString()
-    };
+    try {
+        let respuesta;
+        let data;
 
-    let categorias = JSON.parse(localStorage.getItem('categorias')) || [];
+        // Guarda si estamos editando para usarlo después en el mensaje
+        const esEdicion = !!categoriaEditando;
 
-    if (categoriaEditando) {
-        categorias = categorias.map(c => c.id === categoriaEditando.id ? categoria : c);
-    } else {
-        categorias.push(categoria);
+        if (esEdicion) {
+            respuesta = await fetch(`/api/categorias/${categoriaEditando.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    nombre: nombre,
+                    descripcion: descripcion
+                })
+            });
+        } else {
+            respuesta = await fetch('/api/categorias', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    nombre: nombre,
+                    descripcion: descripcion
+                })
+            });
+        }
+
+        data = await respuesta.json();
+
+        if (!respuesta.ok || !data.ok) {
+            throw new Error(data.mensaje || 'No se pudo guardar la categoría');
+        }
+
+        ocultarFormCategoria();
+        cargarCategorias();
+
+        alert(esEdicion ? 'Categoría actualizada correctamente' : 'Categoría guardada exitosamente');
+
+    } catch (error) {
+        console.error('Error al guardar categoría:', error);
+        alert(error.message || 'Error al guardar la categoría');
     }
-
-    localStorage.setItem('categorias', JSON.stringify(categorias));
-    ocultarFormCategoria();
-    cargarCategorias();
-    alert('Categoría guardada exitosamente');
 }
 
-function cargarCategorias() {
-    const categorias = JSON.parse(localStorage.getItem('categorias')) || [];
+
+//------------------------------------------------------------------------------------------------ GUARDAR O ACTUALIZAR CATEGORIA ----------------------------------------------------------------------------------------
+
+
+
+//------------------------------------------------------------------------------------------------ CARGAR CATEGORIAS ----------------------------------------------------------------------------------------
+
+
+// Función para cargar las categorías desde la base de datos
+async function cargarCategorias() {
+    // Obtiene referencias a los elementos del DOM
     const tbody = document.getElementById('tbody-categorias');
     const sinCategorias = document.getElementById('sin-categorias');
     const prodSelect = document.getElementById('prod-categoria');
     const filtroInventarioSelect = document.getElementById('filtro-inventario-categoria');
     const filtroInput = document.getElementById('filtro-categoria-nombre');
+
+    // Obtiene el texto del filtro de búsqueda
     const filtro = filtroInput ? filtroInput.value.toLowerCase().trim() : '';
 
+    // Si no existe el tbody, no continúa
     if (!tbody) return;
 
+    // Limpia el contenido actual de la tabla
     tbody.innerHTML = '';
 
-    // Actualizar select de categorías en formulario de producto
-    if (prodSelect) {
-        if (categorias.length === 0) {
-            prodSelect.innerHTML = '<option value="">-- Ninguna --</option>';
-        } else {
-            prodSelect.innerHTML = '<option value="">-- Selecciona categoría --</option>' + categorias.map(c => `<option value="${escapeHtml(c.nombre)}">${escapeHtml(c.nombre)}</option>`).join('');
+    try {
+        // Hace una petición al backend para obtener las categorías
+        const respuesta = await fetch('/api/categorias');
+
+        // Convierte la respuesta a JSON
+        const data = await respuesta.json();
+
+        // Si el backend respondió con error, lanza excepción
+        if (!respuesta.ok || !data.ok) {
+            throw new Error(data.mensaje || 'No se pudieron cargar las categorías');
         }
-    }
 
-    // Actualiza el menú desplegable de filtro en la pestaña de Inventario
-    // Actualizar select de filtro inventario
-    if (filtroInventarioSelect) {
-        const valorActual = filtroInventarioSelect.value;
-        if (categorias.length === 0) {
-            filtroInventarioSelect.innerHTML = '<option value="">Todas las categorías</option>';
-        } else {
-            filtroInventarioSelect.innerHTML = '<option value="">Todas las categorías</option>' + categorias.map(c => `<option value="${escapeHtml(c.nombre)}">${escapeHtml(c.nombre)}</option>`).join('');
+        // Convierte la data del backend al formato que usa tu frontend
+        // SQL Server devuelve columnas en mayúscula: ID, NOMBRE, DESCRIPCION
+        const categorias = (data.categorias || []).map(c => ({
+            id: c.ID,
+            nombre: c.NOMBRE,
+            descripcion: c.DESCRIPCION
+        }));
+
+        categoriasCargadas = categorias;
+
+        // Actualizar select de categorías en formulario de producto
+        if (prodSelect) {
+            if (categorias.length === 0) {
+                prodSelect.innerHTML = '<option value="">-- Ninguna --</option>';
+            } else {
+                prodSelect.innerHTML =
+                    '<option value="">-- Selecciona categoría --</option>' +
+                    categorias.map(c => `<option value="${escapeHtml(c.nombre)}">${escapeHtml(c.nombre)}</option>`).join('');
+            }
         }
-        if (valorActual) filtroInventarioSelect.value = valorActual;
-    }
 
-    const categoriasFiltradas = categorias.filter(c => c.nombre.toLowerCase().includes(filtro));
+        // Actualizar select del filtro de inventario
+        if (filtroInventarioSelect) {
+            const valorActual = filtroInventarioSelect.value;
 
-    if (categoriasFiltradas.length === 0) {
+            if (categorias.length === 0) {
+                filtroInventarioSelect.innerHTML = '<option value="">Todas las categorías</option>';
+            } else {
+                filtroInventarioSelect.innerHTML =
+                    '<option value="">Todas las categorías</option>' +
+                    categorias.map(c => `<option value="${escapeHtml(c.nombre)}">${escapeHtml(c.nombre)}</option>`).join('');
+            }
+
+            // Intenta conservar el valor seleccionado previamente
+            if (valorActual) {
+                filtroInventarioSelect.value = valorActual;
+            }
+        }
+
+        // Aplica el filtro por nombre
+        const categoriasFiltradas = categorias.filter(c =>
+            c.nombre.toLowerCase().includes(filtro)
+        );
+
+        // Si no hay resultados, muestra mensaje
+        if (categoriasFiltradas.length === 0) {
+            if (sinCategorias) {
+                sinCategorias.style.display = 'block';
+                sinCategorias.textContent =
+                    categorias.length === 0
+                        ? 'No hay categorías aún. ¡Crea una nueva!'
+                        : 'No se encontraron categorías con ese nombre.';
+            }
+            return;
+        }
+
+        // Si sí hay categorías, oculta el mensaje vacío
+        if (sinCategorias) sinCategorias.style.display = 'none';
+
+        // Recorre las categorías filtradas y las agrega a la tabla
+        categoriasFiltradas.forEach(c => {
+            const row = document.createElement('tr');
+
+            row.innerHTML = `
+                <td>#${c.id}</td>
+                <td>${escapeHtml(c.nombre)}</td>
+                <td>${escapeHtml(c.descripcion || '-')}</td>
+                <td>
+                    <button class="btn-editar" onclick="editarCategoria(${c.id})">Editar</button>
+                    <button class="btn-eliminar" onclick="eliminarCategoria(${c.id})">Eliminar</button>
+                </td>
+            `;
+
+            tbody.appendChild(row);
+        });
+
+    } catch (error) {
+        // Muestra el error en consola
+        console.error('Error al cargar categorías:', error);
+
+        // Limpia la tabla por seguridad
+        tbody.innerHTML = '';
+
+        // Muestra mensaje de error
         if (sinCategorias) {
             sinCategorias.style.display = 'block';
-            sinCategorias.textContent = categorias.length === 0 ? 'No hay categorías aún. ¡Crea una nueva!' : 'No se encontraron categorías con ese nombre.';
+            sinCategorias.textContent = 'Error al cargar las categorías desde la base de datos.';
         }
+    }
+}
+
+
+//------------------------------------------------------------------------------------------------ CARGAR CATEGORIA ----------------------------------------------------------------------------------------
+
+
+
+//------------------------------------------------------------------------------------------------ EDITAR CATEGORIA ----------------------------------------------------------------------------------------
+
+
+function editarCategoria(id) {
+    const cat = categoriasCargadas.find(c => c.id === id);
+
+    if (!cat) {
+        alert('No se encontró la categoría a editar');
         return;
     }
 
-    if (sinCategorias) sinCategorias.style.display = 'none';
-
-    categoriasFiltradas.forEach(c => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>#${c.id}</td>
-            <td>${c.nombre}</td>
-            <td>${c.descripcion || '-'}</td>
-            <td>
-                <button class="btn-editar" onclick="editarCategoria(${c.id})">Editar</button>
-                <button class="btn-eliminar" onclick="eliminarCategoria(${c.id})">Eliminar</button>
-            </td>
-        `;
-        tbody.appendChild(row);
-    });
-}
-
-function editarCategoria(id) {
-    const categorias = JSON.parse(localStorage.getItem('categorias')) || [];
-    const cat = categorias.find(c => c.id === id);
-    if (!cat) return;
-
     categoriaEditando = cat;
+
     document.getElementById('cat-nombre').value = cat.nombre;
     document.getElementById('cat-descripcion').value = cat.descripcion || '';
+
     const titulo = document.querySelector('#form-categoria h3');
     if (titulo) titulo.textContent = 'Editar Categoría';
+
     const cont = document.getElementById('form-categoria');
     if (cont) cont.style.display = 'block';
 }
 
-function eliminarCategoria(id) {
+
+//------------------------------------------------------------------------------------------------ EDITAR CATEGORIA ----------------------------------------------------------------------------------------
+
+
+//------------------------------------------------------------------------------------------------ ELIMINAR CATEGORIA ----------------------------------------------------------------------------------------
+
+
+// Función para eliminar una categoría desde la base de datos
+async function eliminarCategoria(id) {
+    // Confirmación antes de eliminar
     if (!confirm('¿Estás seguro de que deseas eliminar esta categoría?')) return;
 
-    let categorias = JSON.parse(localStorage.getItem('categorias')) || [];
-    categorias = categorias.filter(c => c.id !== id);
-    localStorage.setItem('categorias', JSON.stringify(categorias));
-    cargarCategorias();
-    alert('Categoría eliminada correctamente');
+    try {
+        // Hace la petición al backend para eliminar la categoría
+        const respuesta = await fetch(`/api/categorias/${id}`, {
+            method: 'DELETE'
+        });
+
+        // Convierte la respuesta a JSON
+        const data = await respuesta.json();
+
+        // Si hubo error, lanza excepción
+        if (!respuesta.ok || !data.ok) {
+            throw new Error(data.mensaje || 'No se pudo eliminar la categoría');
+        }
+
+        // Recarga la tabla desde la base de datos
+        cargarCategorias();
+
+        // Muestra mensaje de éxito
+        alert('Categoría eliminada correctamente');
+
+    } catch (error) {
+        // Muestra el error en consola
+        console.error('Error al eliminar categoría:', error);
+
+        // Muestra mensaje al usuario
+        alert(error.message || 'Error al eliminar la categoría');
+    }
 }
+
+
+//------------------------------------------------------------------------------------------------ CARGAR CATEGORIA ----------------------------------------------------------------------------------------
+
+
+
 
 function escapeHtml(str) {
     if (!str) return '';
     return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
-// ==================== NOTIFICACIONES ====================
+
+//==================================================================================================== CATEGORIAS ==========================================================================================
+
+
+// =================================================================================================== NOTIFICACIONES =======================================================================================
 function cargarNotificaciones() {
     const pedidos = JSON.parse(localStorage.getItem('pedidos')) || [];
     const clientes = JSON.parse(localStorage.getItem('clientes')) || [];
