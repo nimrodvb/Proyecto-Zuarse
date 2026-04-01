@@ -104,23 +104,47 @@ app.listen(PORT, () => {
 app.post("/api/clientes", async (req, res) => {
   try {
     // Extrae los datos enviados desde el frontend
-    // IMPORTANTE: ahora también se incluye "direccion"
-    const { nombre, correo, telefono, direccion, ciudad, estado } = req.body;
+    const { nombre, correo, telefono, direccion, ciudad, estado, contrasena } = req.body;
+
+    // Validación básica
+    if (!nombre || !correo || !contrasena) {
+      return res.status(400).json({
+        ok: false,
+        mensaje: "Nombre, correo y contraseña son obligatorios"
+      });
+    }
 
     // Se conecta a la base de datos
     const pool = await conectarDB();
 
-    // Prepara y ejecuta el INSERT en la tabla CLIENTES
-    await pool.request()
-      .input("nombre", sql.NVarChar(100), nombre)        // Nombre del cliente
-      .input("correo", sql.NVarChar(150), correo)        // Correo electrónico
-      .input("telefono", sql.NVarChar(20), telefono)     // Número de teléfono
-      .input("direccion", sql.NVarChar(255), direccion)  // Dirección del cliente
-      .input("ciudad", sql.NVarChar(100), ciudad)        // Ciudad
-      .input("estado", sql.NVarChar(50), estado)         // Estado (activo/inactivo)
+    // Verifica si ya existe un cliente con el mismo correo
+    const clienteExistente = await pool.request()
+      .input("correo", sql.NVarChar(150), correo)
       .query(`
-        INSERT INTO CLIENTES (NOMBRE, CORREO, TELEFONO, DIRECCION, CIUDAD, ESTADO)
-        VALUES (@nombre, @correo, @telefono, @direccion, @ciudad, @estado)
+        SELECT ID
+        FROM CLIENTES
+        WHERE CORREO = @correo
+      `);
+
+    if (clienteExistente.recordset.length > 0) {
+      return res.status(400).json({
+        ok: false,
+        mensaje: "Ya existe una cuenta registrada con ese correo"
+      });
+    }
+
+    // Inserta el cliente incluyendo la contraseña
+    await pool.request()
+      .input("nombre", sql.NVarChar(100), nombre)
+      .input("correo", sql.NVarChar(150), correo)
+      .input("telefono", sql.NVarChar(20), telefono || null)
+      .input("direccion", sql.NVarChar(255), direccion || null)
+      .input("ciudad", sql.NVarChar(100), ciudad || null)
+      .input("estado", sql.NVarChar(50), estado || null)
+      .input("contrasena", sql.NVarChar(100), contrasena)
+      .query(`
+        INSERT INTO CLIENTES (NOMBRE, CORREO, TELEFONO, DIRECCION, CIUDAD, ESTADO, CONTRASENA)
+        VALUES (@nombre, @correo, @telefono, @direccion, @ciudad, @estado, @contrasena)
       `);
 
     // Respuesta de éxito al frontend
@@ -828,3 +852,6 @@ app.delete("/api/productos/:id", async (req, res) => {
 
 
 // ===========================================================================================================^ PRODUCTOS ^==================================================================================
+
+
+

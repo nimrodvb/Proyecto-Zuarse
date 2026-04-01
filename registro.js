@@ -16,9 +16,10 @@ document.addEventListener('DOMContentLoaded', function() {
     configurarErrores();
 });
 
-// ==================== REGISTRO ====================
+// ================================================================================================================ REGISTRO ==============================================================
 async function registrarUsuario(e) {
     e.preventDefault();
+    console.log("SE EJECUTÓ registrarUsuario");
 
     const email = document.getElementById('email-registro').value.trim().toLowerCase();
     const password = document.getElementById('password-registro').value;
@@ -54,21 +55,27 @@ async function registrarUsuario(e) {
 
     try {
         // Envía los datos al backend para guardarlos en la BD (tabla CLIENTES)
-        const respuesta = await fetch('/api/clientes', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                nombre: email.split('@')[0], // Se genera nombre desde el email
-                correo: email,
-                telefono: '',
-                ciudad: '',
-                estado: 'activo'
-            })
-        });
+        console.log("ANTES DEL FETCH");
+        
 
-        const resultado = await respuesta.json();
+     const respuesta = await fetch('/api/clientes', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+        nombre: email.split('@')[0],
+        correo: email,
+        telefono: '',
+        ciudad: '',
+        estado: 'activo',
+        contrasena: encriptarPassword(password)
+    })
+});
+
+console.log("STATUS RESPUESTA:", respuesta.status);
+
+const resultado = await respuesta.json();
 
         if (!resultado.ok) {
             mostrarError(resultado.mensaje);
@@ -81,10 +88,11 @@ async function registrarUsuario(e) {
         // Limpiar formulario
         document.getElementById('form-registro').reset();
 
-    } catch (error) {
-        console.error('Error al registrar:', error);
-        mostrarError('Error al registrar usuario');
-    }
+  } catch (error) {
+    console.error('Error al registrar:', error);
+    alert(error.message);
+    mostrarError('Error al registrar usuario');
+}
 }
 
 // ==================== FUNCIONES AUXILIARES ====================
