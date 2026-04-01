@@ -1,6 +1,7 @@
 // VARIABLES GLOBALES
 const SECRET_KEY = 'zuarse_secret_2024'; // Necesario para crear contraseñas de empleados
 let productoEditando = null;
+let productosCargados = [];
 let clienteEditando = null;
 let pedidoVisualizando = null;
 let categoriaEditando = null;
@@ -36,7 +37,7 @@ document.addEventListener('DOMContentLoaded', function() {
     try { cargarEquipo(); } catch(e) { console.error(e); }
 });
 
-// ==================== CONFIGURAR EVENTOS ====================
+// ============================================================================================================ CONFIGURAR EVENTOS ========================================================
 function configurarEventos() {
     // Tabs
     document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -160,111 +161,271 @@ function ocultarFormProducto() {
     productoEditando = null;
 }
 
-function guardarProducto(e) {
+//---------------------------------------------------------------------------------------------GUARDAR PRODUCTO---------------------------------------------------------------------------
+
+
+// Función para guardar o actualizar un producto en la base de datos
+async function guardarProducto(e) {
     e.preventDefault();
 
-    const producto = {
-        id: productoEditando?.id || Date.now(),
-        nombre: document.getElementById('prod-nombre').value,
-        descripcion: document.getElementById('prod-descripcion').value,
-        precio: parseFloat(document.getElementById('prod-precio').value),
-        imagen: document.getElementById('prod-imagen').value || 'images/default.png',
-        stock: parseInt(document.getElementById('prod-stock').value),
-        categoria: document.getElementById('prod-categoria').value || 'General',
-        fechaCreacion: productoEditando?.fechaCreacion || new Date().toLocaleDateString()
-    };
+    const nombre = document.getElementById('prod-nombre').value.trim();
+    const descripcion = document.getElementById('prod-descripcion').value.trim();
+    const precio = parseFloat(document.getElementById('prod-precio').value);
+    const imagen = document.getElementById('prod-imagen').value.trim() || 'images/default.png';
+    const stock = parseInt(document.getElementById('prod-stock').value) || 0;
+    const categoriaId = parseInt(document.getElementById('prod-categoria').value);
 
-    let productos = JSON.parse(localStorage.getItem('productos')) || [];
-
-    if (productoEditando) {
-        // Actualizar
-        productos = productos.map(p => p.id === productoEditando.id ? producto : p);
-    } else {
-        // Crear nuevo
-        productos.push(producto);
+    if (!nombre) {
+        alert('El nombre del producto es obligatorio');
+        return;
     }
 
-    localStorage.setItem('productos', JSON.stringify(productos));
-    ocultarFormProducto();
-    cargarProductos();
-    // Recargar el inventario para reflejar los cambios en el stock o el nuevo producto
-    cargarInventario();
-    alert('Producto guardado exitosamente');
+    if (isNaN(precio)) {
+        alert('Debes ingresar un precio válido');
+        return;
+    }
+
+    if (isNaN(categoriaId)) {
+        alert('Debes seleccionar una categoría');
+        return;
+    }
+
+    try {
+        let respuesta;
+        const esEdicion = !!productoEditando;
+
+        if (esEdicion) {
+            respuesta = await fetch(`/api/productos/${productoEditando.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    nombre,
+                    descripcion,
+                    precio,
+                    imagen,
+                    stock,
+                    categoriaId
+                })
+            });
+        } else {
+            respuesta = await fetch('/api/productos', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    nombre,
+                    descripcion,
+                    precio,
+                    imagen,
+                    stock,
+                    categoriaId
+                })
+            });
+        }
+
+        const data = await respuesta.json();
+
+        if (!respuesta.ok || !data.ok) {
+            throw new Error(data.mensaje || 'No se pudo guardar el producto');
+        }
+
+        ocultarFormProducto();
+        cargarProductos();
+        cargarInventario();
+
+        alert(esEdicion ? 'Producto actualizado correctamente' : 'Producto guardado correctamente');
+
+    } catch (error) {
+        console.error('Error al guardar producto:', error);
+        alert(error.message || 'Error al guardar el producto');
+    }
 }
 
-function cargarProductos() {
-    const productos = JSON.parse(localStorage.getItem('productos')) || [];
+
+//---------------------------------------------------------------------------------------------^ GUARDAR PRODUCTO ^---------------------------------------------------------------------------
+
+
+//--------------------------------------------------------------------------------------------- CARGAR PRODUCTO ---------------------------------------------------------------------------
+
+// Función para cargar los productos desde la base de datos
+async function cargarProductos() {
+    // Obtiene referencias a los elementos del DOM
     const tbody = document.getElementById('tbody-productos');
     const sinProductos = document.getElementById('sin-productos');
     const filtroNombreInput = document.getElementById('filtro-producto-nombre');
     const filtroCategoriaInput = document.getElementById('filtro-producto-categoria');
-    
+
+    // Obtiene los valores de los filtros
     const filtroNombre = filtroNombreInput ? filtroNombreInput.value.toLowerCase().trim() : '';
     const filtroCategoria = filtroCategoriaInput ? filtroCategoriaInput.value.toLowerCase().trim() : '';
 
+    // Si no existe el tbody, termina
     if (!tbody) return;
 
+    // Limpia la tabla antes de volver a llenarla
     tbody.innerHTML = '';
 
-    const productosFiltrados = productos.filter(p => {
-        const coincideNombre = p.nombre.toLowerCase().includes(filtroNombre);
-        const coincideCategoria = (p.categoria || '').toLowerCase().includes(filtroCategoria);
-        return coincideNombre && coincideCategoria;
-    });
+    try {
+        // Hace la petición al backend para obtener los productos
+        const respuesta = await fetch('/api/productos');
 
-    if (productosFiltrados.length === 0) {
-        sinProductos.style.display = 'block';
-        sinProductos.textContent = productos.length === 0 ? 'No hay productos aún. ¡Crea uno nuevo!' : 'No se encontraron productos con esos criterios.';
+        // Convierte la respuesta a JSON
+        const data = await respuesta.json();
+
+        // Valida si la respuesta fue exitosa
+        if (!respuesta.ok || !data.ok) {
+            throw new Error(data.mensaje || 'No se pudieron cargar los productos');
+        }
+
+        // Convierte los datos al formato que usa el frontend
+        const productos = (data.productos || []).map(p => ({
+            id: p.ID,
+            nombre: p.NOMBRE,
+            descripcion: p.DESCRIPCION,
+            precio: parseFloat(p.PRECIO) || 0,
+            stock: p.STOCK || 0,
+            imagen: p.URL_IMAGEN,
+            categoriaId: p.ID_CATEGORIA,
+            categoria: p.CATEGORIA
+        }));
+
+        productosCargados = productos;
+
+        // Aplica filtros por nombre y categoría
+        const productosFiltrados = productos.filter(p => {
+            const coincideNombre = p.nombre.toLowerCase().includes(filtroNombre);
+            const coincideCategoria = (p.categoria || '').toLowerCase().includes(filtroCategoria);
+            return coincideNombre && coincideCategoria;
+        });
+
+        // Si no hay productos filtrados, muestra mensaje
+        if (productosFiltrados.length === 0) {
+            if (sinProductos) {
+                sinProductos.style.display = 'block';
+                sinProductos.textContent =
+                    productos.length === 0
+                        ? 'No hay productos aún. ¡Crea uno nuevo!'
+                        : 'No se encontraron productos con esos criterios.';
+            }
+            return;
+        }
+
+        // Si hay productos, oculta el mensaje vacío
+        if (sinProductos) sinProductos.style.display = 'none';
+
+        // Recorre los productos y los agrega a la tabla
+        productosFiltrados.forEach(producto => {
+            const row = document.createElement('tr');
+
+            row.innerHTML = `
+                <td>#${producto.id}</td>
+                <td>${escapeHtml(producto.nombre)}</td>
+                <td>$${producto.precio.toFixed(2)}</td>
+                <td>${producto.stock}</td>
+                <td>${escapeHtml(producto.categoria || '-')}</td>
+                <td>
+                    <button class="btn-editar" onclick="editarProducto(${producto.id})">Editar</button>
+                    <button class="btn-eliminar" onclick="eliminarProducto(${producto.id})">Eliminar</button>
+                </td>
+            `;
+
+            tbody.appendChild(row);
+        });
+
+    } catch (error) {
+        // Muestra error en consola
+        console.error('Error al cargar productos:', error);
+
+        // Limpia la tabla por seguridad
+        tbody.innerHTML = '';
+
+        // Muestra mensaje de error
+        if (sinProductos) {
+            sinProductos.style.display = 'block';
+            sinProductos.textContent = 'Error al cargar los productos desde la base de datos.';
+        }
+    }
+}
+
+
+//---------------------------------------------------------------------------------------------^ CARGAR PRODUCTO ^---------------------------------------------------------------------------
+
+
+//---------------------------------------------------------------------------------------------EDITAR PRODUCTO---------------------------------------------------------------------------
+
+
+// Función para preparar la edición de un producto
+function editarProducto(id) {
+    const producto = productosCargados.find(p => p.id === id);
+
+    if (!producto) {
+        alert('No se encontró el producto a editar');
         return;
     }
 
-    sinProductos.style.display = 'none';
-
-    productosFiltrados.forEach(producto => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>#${producto.id}</td>
-            <td>${producto.nombre}</td>
-            <td>$${(producto.precio || 0).toFixed(2)}</td>
-            <td>${producto.stock}</td>
-            <td>${producto.categoria}</td>
-            <td>
-                <button class="btn-editar" onclick="editarProducto(${producto.id})">Editar</button>
-                <button class="btn-eliminar" onclick="eliminarProducto(${producto.id})">Eliminar</button>
-            </td>
-        `;
-        tbody.appendChild(row);
-    });
-}
-
-function editarProducto(id) {
-    const productos = JSON.parse(localStorage.getItem('productos')) || [];
-    const producto = productos.find(p => p.id === id);
-
-    if (!producto) return;
-
     productoEditando = producto;
-    document.getElementById('prod-nombre').value = producto.nombre;
-    document.getElementById('prod-descripcion').value = producto.descripcion;
-    document.getElementById('prod-precio').value = producto.precio;
-    document.getElementById('prod-imagen').value = producto.imagen;
-    document.getElementById('prod-stock').value = producto.stock;
-    document.getElementById('prod-categoria').value = producto.categoria;
 
-    document.querySelector('#form-producto h3').textContent = 'Editar Producto';
-    document.getElementById('form-producto').style.display = 'block';
+    document.getElementById('prod-nombre').value = producto.nombre;
+    document.getElementById('prod-descripcion').value = producto.descripcion || '';
+    document.getElementById('prod-precio').value = producto.precio;
+    document.getElementById('prod-imagen').value = producto.imagen || '';
+    document.getElementById('prod-stock').value = producto.stock;
+    document.getElementById('prod-categoria').value = producto.categoriaId;
+
+    const titulo = document.querySelector('#form-producto h3');
+    if (titulo) titulo.textContent = 'Editar Producto';
+
+    const cont = document.getElementById('form-producto');
+    if (cont) cont.style.display = 'block';
 }
 
-function eliminarProducto(id) {
+
+//---------------------------------------------------------------------------------------------^ EDITAR PRODUCTO ^---------------------------------------------------------------------------
+
+
+// Función para eliminar un producto desde la base de datos
+async function eliminarProducto(id) {
+    // Confirmación antes de eliminar
     if (!confirm('¿Estás seguro de que deseas eliminar este producto?')) return;
 
-    let productos = JSON.parse(localStorage.getItem('productos')) || [];
-    productos = productos.filter(p => p.id !== id);
-    localStorage.setItem('productos', JSON.stringify(productos));
-    cargarProductos();
-    // Recargar el inventario para reflejar el producto eliminado
-    cargarInventario();
+    try {
+        // Hace la petición al backend para eliminar el producto
+        const respuesta = await fetch(`/api/productos/${id}`, {
+            method: 'DELETE'
+        });
+
+        // Convierte la respuesta a JSON
+        const data = await respuesta.json();
+
+        // Si hubo error, lanza excepción
+        if (!respuesta.ok || !data.ok) {
+            throw new Error(data.mensaje || 'No se pudo eliminar el producto');
+        }
+
+        // Recarga la tabla de productos
+        cargarProductos();
+
+        // Recarga el inventario por si depende de los productos
+        cargarInventario();
+
+        // Muestra mensaje de éxito
+        alert('Producto eliminado correctamente');
+
+    } catch (error) {
+        // Muestra el error en consola
+        console.error('Error al eliminar producto:', error);
+
+        // Muestra mensaje al usuario
+        alert(error.message || 'Error al eliminar el producto');
+    }
 }
+
+
+// ===============================================================================================================^ PRODUCTOS ^===============================================================================
+
 
 // ==================== INVENTARIO ====================
 /**
@@ -716,15 +877,18 @@ async function cargarCategorias() {
         categoriasCargadas = categorias;
 
         // Actualizar select de categorías en formulario de producto
+
         if (prodSelect) {
-            if (categorias.length === 0) {
-                prodSelect.innerHTML = '<option value="">-- Ninguna --</option>';
-            } else {
-                prodSelect.innerHTML =
-                    '<option value="">-- Selecciona categoría --</option>' +
-                    categorias.map(c => `<option value="${escapeHtml(c.nombre)}">${escapeHtml(c.nombre)}</option>`).join('');
-            }
-        }
+    if (categorias.length === 0) {
+        prodSelect.innerHTML = '<option value="">-- Ninguna --</option>';
+    } else {
+        prodSelect.innerHTML =
+            '<option value="">-- Selecciona categoría --</option>' +
+            categorias.map(c => `<option value="${c.id}">${escapeHtml(c.nombre)}</option>`).join('');
+    }
+}
+
+
 
         // Actualizar select del filtro de inventario
         if (filtroInventarioSelect) {
@@ -937,7 +1101,7 @@ function cargarNotificaciones() {
     });
 }
 
-// ==================== PROVEEDORES ====================
+// ==================================================================================================== PROVEEDORES ======================================================================
 function mostrarFormProveedor() {
     proveedorEditando = null;
     const form = document.getElementById('formulario-proveedor');
@@ -1057,7 +1221,11 @@ function eliminarProveedor(id) {
     alert('Proveedor eliminado correctamente');
 }
 
-// ==================== COMPRAS ====================
+
+// ==================================================================================================== PROVEEDORES ======================================================================
+
+
+// ====================================================================================================== COMPRAS =========================================================================
 function mostrarFormCompra() {
     compraEditando = null;
     const form = document.getElementById('formulario-compra');
@@ -1278,7 +1446,7 @@ function agregarProductoACompra() {
     itemPrecioInput.value = '';
 }
 
-// ==================== PEDIDOS ====================
+// ======================================================================================================== PEDIDOS ======================================================================
 function cargarPedidos() {
     const pedidos = JSON.parse(localStorage.getItem('pedidos')) || [];
     const productos = JSON.parse(localStorage.getItem('productos')) || []; // Cargar productos para buscar categorías
@@ -1433,7 +1601,7 @@ function eliminarPedido(pedidoId) {
     alert('Pedido eliminado correctamente');
 }
 
-// ==================== PDF Y EMAIL ====================
+// ====================================================================================================== PDF Y EMAIL ====================================================================
 function descargarPedidoPDF(pedidoId) {
     const pedidos = JSON.parse(localStorage.getItem('pedidos')) || [];
     const pedido = pedidos.find(p => p.id === pedidoId);
@@ -1556,7 +1724,7 @@ function enviarPedidoPorEmail(pedidoId) {
         });
 }
 
-// ==================== DASHBOARD & MÉTRICAS ====================
+// ==================================================================================================== DASHBOARD & MÉTRICAS =============================================================
 function cargarDashboard() {
     const pedidos = JSON.parse(localStorage.getItem('pedidos')) || [];
     const productos = JSON.parse(localStorage.getItem('productos')) || [];
@@ -1650,7 +1818,7 @@ function renderizarGraficoVentas(pedidos) {
     container.innerHTML = html;
 }
 
-// ==================== EQUIPO (EMPLEADOS) ====================
+// ========================================================================================================= EQUIPO (EMPLEADOS) ===========================================================
 function mostrarFormEmpleado() {
     empleadoEditando = null;
     document.getElementById('formulario-empleado').reset();

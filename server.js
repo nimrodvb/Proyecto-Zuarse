@@ -600,5 +600,231 @@ app.delete("/api/categorias/:id", async (req, res) => {
 
 
 
-// =========================================================================================================== CATEGORIAS ==================================================================================
+// ===========================================================================================================^ CATEGORIAS ^==================================================================================
 
+
+
+// =========================================================================================================== PRODUCTOS ==================================================================================
+
+
+// --------------------------------------------------------------------------------------------------- GUARDAR PRODUCTO ---------------------------------------------------------------------
+
+
+// Ruta para guardar un nuevo producto en la base de datos
+app.post("/api/productos", async (req, res) => {
+  try {
+    // Extrae los datos enviados desde el frontend
+    const { nombre, descripcion, precio, imagen, stock, categoriaId } = req.body;
+
+    // Valida los campos obligatorios
+    if (!nombre || precio === undefined || precio === null || !categoriaId) {
+      return res.status(400).json({
+        ok: false,
+        mensaje: "Nombre, precio y categoría son obligatorios"
+      });
+    }
+
+    // Se conecta a la base de datos
+    const pool = await conectarDB();
+
+    // Inserta el producto en la tabla PRODUCTOS
+    await pool.request()
+      .input("nombre", sql.NVarChar(100), nombre.trim())
+      .input("descripcion", sql.NVarChar(255), descripcion ? descripcion.trim() : null)
+      .input("precio", sql.Decimal(10, 2), precio)
+      .input("stock", sql.Int, stock || 0)
+      .input("imagen", sql.NVarChar(500), imagen ? imagen.trim() : null)
+      .input("categoriaId", sql.Int, categoriaId)
+      .query(`
+        INSERT INTO PRODUCTOS (NOMBRE, DESCRIPCION, PRECIO, STOCK, URL_IMAGEN, ID_CATEGORIA)
+        VALUES (@nombre, @descripcion, @precio, @stock, @imagen, @categoriaId)
+      `);
+
+    // Respuesta exitosa
+    res.json({
+      ok: true,
+      mensaje: "Producto guardado correctamente"
+    });
+
+  } catch (error) {
+    // Muestra el error en consola del servidor
+    console.error("Error en /api/productos:", error);
+
+    // Respuesta de error al frontend
+    res.status(500).json({
+      ok: false,
+      mensaje: "Error al guardar el producto"
+    });
+  }
+});
+
+
+// ---------------------------------------------------------------------------------------------------^ GUARDAR PRODUCTO ^---------------------------------------------------------------------
+
+
+// --------------------------------------------------------------------------------------------------- CARGAR PRODUCTO ---------------------------------------------------------------------
+
+
+// Ruta para obtener todos los productos desde la base de datos
+app.get("/api/productos", async (req, res) => {
+  try {
+    // Se conecta a la base de datos
+    const pool = await conectarDB();
+
+    // Consulta los productos junto con el nombre de su categoría
+    const result = await pool.request().query(`
+      SELECT 
+        P.ID,
+        P.NOMBRE,
+        P.DESCRIPCION,
+        P.PRECIO,
+        P.STOCK,
+        P.URL_IMAGEN,
+        P.ID_CATEGORIA,
+        C.NOMBRE AS CATEGORIA
+      FROM PRODUCTOS P
+      INNER JOIN CATEGORIAS C ON P.ID_CATEGORIA = C.ID
+      ORDER BY P.ID ASC
+    `);
+
+    // Devuelve los productos al frontend
+    res.json({
+      ok: true,
+      productos: result.recordset
+    });
+
+  } catch (error) {
+    console.error("Error en /api/productos:", error);
+    res.status(500).json({
+      ok: false,
+      mensaje: "Error al obtener los productos"
+    });
+  }
+});
+
+
+// ---------------------------------------------------------------------------------------------------^ CARGAR PRODUCTO ^---------------------------------------------------------------------
+
+
+// --------------------------------------------------------------------------------------------------- ACTUALIZAR PRODUCTO ----------------------------------------------------------------
+// Ruta para actualizar un producto existente en la base de datos
+app.put("/api/productos/:id", async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const { nombre, descripcion, precio, imagen, stock, categoriaId } = req.body;
+
+    if (!id || isNaN(id)) {
+      return res.status(400).json({
+        ok: false,
+        mensaje: "ID de producto no válido"
+      });
+    }
+
+    if (!nombre || precio === undefined || precio === null || !categoriaId) {
+      return res.status(400).json({
+        ok: false,
+        mensaje: "Nombre, precio y categoría son obligatorios"
+      });
+    }
+
+    const pool = await conectarDB();
+
+    const result = await pool.request()
+      .input("id", sql.Int, id)
+      .input("nombre", sql.NVarChar(100), nombre.trim())
+      .input("descripcion", sql.NVarChar(255), descripcion ? descripcion.trim() : null)
+      .input("precio", sql.Decimal(10, 2), precio)
+      .input("stock", sql.Int, stock || 0)
+      .input("imagen", sql.NVarChar(500), imagen ? imagen.trim() : null)
+      .input("categoriaId", sql.Int, categoriaId)
+      .query(`
+        UPDATE PRODUCTOS
+        SET NOMBRE = @nombre,
+            DESCRIPCION = @descripcion,
+            PRECIO = @precio,
+            STOCK = @stock,
+            URL_IMAGEN = @imagen,
+            ID_CATEGORIA = @categoriaId
+        WHERE ID = @id
+      `);
+
+    if (result.rowsAffected[0] === 0) {
+      return res.status(404).json({
+        ok: false,
+        mensaje: "No se encontró el producto a actualizar"
+      });
+    }
+
+    res.json({
+      ok: true,
+      mensaje: "Producto actualizado correctamente"
+    });
+
+  } catch (error) {
+    console.error("Error en PUT /api/productos/:id:", error);
+    res.status(500).json({
+      ok: false,
+      mensaje: "Error al actualizar el producto"
+    });
+  }
+});
+
+
+// --------------------------------------------------------------------------------------------------- ACTUALIZAR PRODUCTO ----------------------------------------------------------------
+
+
+// -------------------------------------------------------------------------------------------------- ELIMINAR PRODUCTO ------------------------------------------------------------------
+// Ruta para eliminar un producto existente de la base de datos
+app.delete("/api/productos/:id", async (req, res) => {
+  try {
+    // Obtiene el id desde la URL
+    const id = parseInt(req.params.id);
+
+    // Valida que el id sea correcto
+    if (!id || isNaN(id)) {
+      return res.status(400).json({
+        ok: false,
+        mensaje: "ID de producto no válido"
+      });
+    }
+
+    // Se conecta a la base de datos
+    const pool = await conectarDB();
+
+    // Ejecuta el DELETE
+    const result = await pool.request()
+      .input("id", sql.Int, id)
+      .query(`
+        DELETE FROM PRODUCTOS
+        WHERE ID = @id
+      `);
+
+    // Si no se eliminó ninguna fila, no existía
+    if (result.rowsAffected[0] === 0) {
+      return res.status(404).json({
+        ok: false,
+        mensaje: "No se encontró el producto a eliminar"
+      });
+    }
+
+    // Respuesta exitosa
+    res.json({
+      ok: true,
+      mensaje: "Producto eliminado correctamente"
+    });
+
+  } catch (error) {
+    console.error("Error en DELETE /api/productos/:id:", error);
+    res.status(500).json({
+      ok: false,
+      mensaje: "Error al eliminar el producto"
+    });
+  }
+});
+
+
+// --------------------------------------------------------------------------------------------------^ ELIMINAR PRODUCTO ^------------------------------------------------------------------
+
+
+
+// ===========================================================================================================^ PRODUCTOS ^==================================================================================
