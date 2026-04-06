@@ -1,15 +1,6 @@
 // Constantes
 const SECRET_KEY = 'zuarse_secret_2024';
 
-// Preguntas de seguridad
-const preguntasSeguridad = [
-    { id: 1, pregunta: "¿Cuál es el nombre de tu mascota favorita?", respuestaEjemplo: "michi" },
-    { id: 2, pregunta: "¿En qué ciudad naciste?", respuestaEjemplo: "méxico" },
-    { id: 3, pregunta: "¿Cuál es el nombre de tu madre?", respuestaEjemplo: "maría" },
-    { id: 4, pregunta: "¿Cuál es tu película favorita?", respuestaEjemplo: "avatar" },
-    { id: 5, pregunta: "¿En qué año naciste?", respuestaEjemplo: "1990" }
-];
-
 // Inicialización
 document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('form-registro').addEventListener('submit', registrarUsuario);
@@ -24,8 +15,6 @@ async function registrarUsuario(e) {
     const email = document.getElementById('email-registro').value.trim().toLowerCase();
     const password = document.getElementById('password-registro').value;
     const confirmarPassword = document.getElementById('confirmar-password-registro').value;
-    const preguntaId = document.getElementById('pregunta-seguridad-registro').value;
-    const respuestaSeguridad = document.getElementById('respuesta-seguridad-registro').value.trim().toLowerCase();
 
     // Validaciones
     if (!validarEmail(email)) {
@@ -43,39 +32,28 @@ async function registrarUsuario(e) {
         return;
     }
 
-    if (!preguntaId) {
-        mostrarError('Por favor selecciona una pregunta de seguridad');
-        return;
-    }
-
-    if (respuestaSeguridad.length < 2) {
-        mostrarError('Por favor ingresa una respuesta válida');
-        return;
-    }
-
     try {
         // Envía los datos al backend para guardarlos en la BD (tabla CLIENTES)
         console.log("ANTES DEL FETCH");
-        
 
-     const respuesta = await fetch('/api/clientes', {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-        nombre: email.split('@')[0],
-        correo: email,
-        telefono: '',
-        ciudad: '',
-        estado: 'activo',
-        contrasena: encriptarPassword(password)
-    })
-});
+        const respuesta = await fetch('/api/clientes', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                nombre: email.split('@')[0],
+                correo: email,
+                telefono: '',
+                ciudad: '',
+                estado: 'activo',
+                contrasena: encriptarPassword(password)
+            })
+        });
 
-console.log("STATUS RESPUESTA:", respuesta.status);
+        console.log("STATUS RESPUESTA:", respuesta.status);
 
-const resultado = await respuesta.json();
+        const resultado = await respuesta.json();
 
         if (!resultado.ok) {
             mostrarError(resultado.mensaje);
@@ -88,11 +66,11 @@ const resultado = await respuesta.json();
         // Limpiar formulario
         document.getElementById('form-registro').reset();
 
-  } catch (error) {
-    console.error('Error al registrar:', error);
-    alert(error.message);
-    mostrarError('Error al registrar usuario');
-}
+    } catch (error) {
+        console.error('Error al registrar:', error);
+        alert(error.message);
+        mostrarError('Error al registrar usuario');
+    }
 }
 
 // ==================== FUNCIONES AUXILIARES ====================
