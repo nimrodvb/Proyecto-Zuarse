@@ -130,8 +130,15 @@ async function loginUnificado(e) {
             return;
         }
 
-        // Si el login fue correcto, crea la sesión usando el tipo devuelto por la BD
-        crearSesion(resultado.usuario, resultado.tipo, recordar);
+        // 🚨 Si es contraseña temporal → obligar cambio
+if (resultado.requiereCambioPassword) {
+    localStorage.setItem("usuario_temp", resultado.usuario);
+    window.location.href = "cambiar-password.html";
+    return;
+}
+
+// ✔ Login normal
+crearSesion(resultado.usuario, resultado.tipo, recordar);
 
     } catch (error) {
         // Muestra error en consola para depuración

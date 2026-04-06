@@ -1,233 +1,154 @@
-// Variables globales
-let usuarioEnRecuperacion = null;
+// ==========================================================
+// recuperar-password.js
+// Flujo nuevo de recuperación:
+// 1. Usuario normal ingresa su correo
+// 2. Admin ingresa su usuario
+// 3. Se envía la solicitud al backend
+// 4. El backend genera una contraseña temporal
+// 5. El backend guarda la nueva contraseña en la BD
+// 6. El backend envía esa contraseña al correo del usuario/admin
+// ==========================================================
+
+// Variable global para saber si se está recuperando
+// una cuenta de usuario normal o de administrador
 let tipoRecuperacion = 'usuario'; // 'usuario' o 'admin'
-const SECRET_KEY = 'zuarse_secret_2024'; // Clave secreta para encriptación
 
-// Datos del admin
-const adminData = {
-    usuario: 'admin',
-    preguntaSeguridad: "¿En qué ciudad naciste?",
-    respuestaSeguridad: "méxico"
-};
+// ==========================================================
+// INICIALIZACIÓN
+// ==========================================================
+document.addEventListener('DOMContentLoaded', function () {
+    // Formulario de recuperación para usuario normal
+    const formEmail = document.getElementById('form-email-recuperacion');
+    if (formEmail) {
+        formEmail.addEventListener('submit', recuperarPasswordUsuario);
+    }
 
-// Preguntas de seguridad disponibles
-const preguntasSeguridad = [
-    { id: 1, pregunta: "¿Cuál es el nombre de tu mascota favorita?", respuestaEjemplo: "michi" },
-    { id: 2, pregunta: "¿En qué ciudad naciste?", respuestaEjemplo: "méxico" },
-    { id: 3, pregunta: "¿Cuál es el nombre de tu madre?", respuestaEjemplo: "maría" },
-    { id: 4, pregunta: "¿Cuál es tu película favorita?", respuestaEjemplo: "avatar" },
-    { id: 5, pregunta: "¿En qué año naciste?", respuestaEjemplo: "1990" }
-];
 
-document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('form-email-recuperacion').addEventListener('submit', buscarUsuario);
-    document.getElementById('form-usuario-recuperacion').addEventListener('submit', buscarAdmin);
-    document.getElementById('form-nueva-password').addEventListener('submit', cambiarPassword);
-    configurarTabs();
+  
+
+    // Configurar botón para cerrar mensajes de error
     configurarErrores();
 });
 
-// ==================== TABS ====================
-function configurarTabs() {
-    const tabBtns = document.querySelectorAll('.tab-login');
-    
-    tabBtns.forEach(btn => {
-        btn.addEventListener('click', function() {
-            const tipoTab = this.dataset.tab;
-            tipoRecuperacion = tipoTab.includes('usuario') ? 'usuario' : 'admin';
-            
-            // Remover active
-            tabBtns.forEach(b => b.classList.remove('active'));
-            document.getElementById('paso-1').style.display = 'none';
-            document.getElementById('paso-1-admin').style.display = 'none';
-            
-            // Agregar active
-            this.classList.add('active');
-            if (tipoRecuperacion === 'usuario') {
-                document.getElementById('paso-1').style.display = 'block';
-            } else {
-                document.getElementById('paso-1-admin').style.display = 'block';
-            }
-            
-            // Limpiar
-            document.getElementById('form-email-recuperacion').reset();
-            document.getElementById('form-usuario-recuperacion').reset();
-        });
-    });
-}
 
-// ==================== PASO 1: BUSCAR USUARIO ====================
-function buscarUsuario(e) {
+// ==========================================================
+// RECUPERAR CONTRASEÑA - USUARIO NORMAL
+// Envía el correo al backend
+// ==========================================================
+async function recuperarPasswordUsuario(e) {
     e.preventDefault();
-    
-    const email = document.getElementById('email-recuperacion').value.trim();
-    
+
+    // Obtener el correo ingresado
+    const email = document.getElementById('email-recuperacion').value.trim().toLowerCase();
+
+    // Validar formato del correo
     if (!validarEmail(email)) {
-        mostrarError('Por favor ingresa un email válido');
+        mostrarError('Por favor ingresa un correo válido');
         return;
     }
 
-    // Obtener usuarios del localStorage
-    const usuariosRegistrados = obtenerUsuariosRegistrados();
-    
-    // Buscar el usuario
-    let usuarioEncontrado = null;
-    for (const [userEmail, userData] of Object.entries(usuariosRegistrados)) {
-        if (userEmail === email) {
-            usuarioEncontrado = { email: userEmail, ...userData };
-            break;
+    try {
+        // Petición al backend para recuperar contraseña del cliente
+        const respuesta = await fetch('/api/recuperar-password-cliente', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ correo: email })
+        });
+
+        // Convertir respuesta a JSON
+        const resultado = await respuesta.json();
+
+        // Si el backend responde error
+        if (!resultado.ok) {
+            mostrarError(resultado.mensaje || 'No se pudo procesar la recuperación');
+            return;
         }
-    }
 
-    if (!usuarioEncontrado) {
-        mostrarError('No encontramos una cuenta con ese email');
-        return;
-    }
+        // Mostrar pantalla de éxito
+        mostrarPasoExito();
 
-    usuarioEnRecuperacion = usuarioEncontrado;
-    irPaso2();
-}
-
-// ==================== PASO 1B: BUSCAR ADMIN ====================
-function buscarAdmin(e) {
-    e.preventDefault();
-    
-    const usuario = document.getElementById('usuario-recuperacion').value.trim();
-    
-    if (usuario !== adminData.usuario) {
-        mostrarError('Usuario administrador no encontrado');
-        return;
-    }
-
-    usuarioEnRecuperacion = adminData;
-    irPaso2();
-}
-
-// ==================== PASO 2: PREGUNTA DE SEGURIDAD ====================
-function irPaso2() {
-    document.getElementById('paso-1').style.display = 'none';
-    document.getElementById('paso-2').style.display = 'block';
-
-    // Mostrar pregunta de seguridad
-    const pregunta = usuarioEnRecuperacion.preguntaSeguridad;
-    document.getElementById('pregunta-texto').textContent = pregunta;
-    document.getElementById('respuesta-seguridad').value = '';
-    document.getElementById('respuesta-seguridad').focus();
-}
-
-function verificarRespuesta() {
-    const respuestaIngresada = document.getElementById('respuesta-seguridad').value.trim().toLowerCase();
-    const respuestaCorrecta = usuarioEnRecuperacion.respuestaSeguridad.toLowerCase();
-
-    if (respuestaIngresada !== respuestaCorrecta) {
-        mostrarError('La respuesta de seguridad es incorrecta');
-        return;
-    }
-
-    // Respuesta correcta
-    irPaso3();
-}
-
-// ==================== PASO 3: NUEVA CONTRASEÑA ====================
-function irPaso3() {
-    document.getElementById('paso-2').style.display = 'none';
-    document.getElementById('paso-3').style.display = 'block';
-    document.getElementById('nueva-password').focus();
-}
-
-function cambiarPassword(e) {
-    e.preventDefault();
-
-    const nuevaPassword = document.getElementById('nueva-password').value;
-    const confirmarPassword = document.getElementById('confirmar-password').value;
-
-    if (nuevaPassword.length < 6) {
-        mostrarError('La contraseña debe tener al menos 6 caracteres');
-        return;
-    }
-
-    if (nuevaPassword !== confirmarPassword) {
-        mostrarError('Las contraseñas no coinciden');
-        return;
-    }
-
-    // Encriptar la nueva contraseña
-    const passwordEncriptada = encriptarPassword(nuevaPassword);
-
-    if (tipoRecuperacion === 'usuario') {
-        // Actualizar contraseña de usuario normal
-        const usuariosRegistrados = obtenerUsuariosRegistrados();
-        
-        if (usuariosRegistrados[usuarioEnRecuperacion.email]) {
-            usuariosRegistrados[usuarioEnRecuperacion.email].passwordEncriptada = passwordEncriptada;
-            localStorage.setItem('usuarios_zuarse', JSON.stringify(usuariosRegistrados));
-            irPaso4();
-        }
-    } else if (tipoRecuperacion === 'admin') {
-        // Actualizar contraseña de admin
-        const adminData = {
-            usuario: usuarioEnRecuperacion.usuario,
-            passwordEncriptada: passwordEncriptada,
-            preguntaSeguridad: usuarioEnRecuperacion.preguntaSeguridad,
-            respuestaSeguridad: usuarioEnRecuperacion.respuestaSeguridad
-        };
-        localStorage.setItem('admin_zuarse', JSON.stringify(adminData));
-        irPaso4();
+    } catch (error) {
+        console.error('Error al recuperar contraseña de usuario:', error);
+        mostrarError('Error de conexión con el servidor');
     }
 }
 
-// ==================== PASO 4: ÉXITO ====================
-function irPaso4() {
-    document.getElementById('paso-3').style.display = 'none';
-    document.getElementById('paso-4').style.display = 'block';
 
-    setTimeout(() => {
-        // window.location.href = 'login.html';
-    }, 2000);
+
+// ==========================================================
+// MOSTRAR PANTALLA DE ÉXITO
+// Oculta formularios y muestra mensaje final
+// ==========================================================
+function mostrarPasoExito() {
+    ocultarTodosLosPasos();
+
+    const pasoExito = document.getElementById('paso-4');
+    if (pasoExito) {
+        pasoExito.style.display = 'block';
+    }
 }
 
-// ==================== VOLVER ====================
-function volverPaso1() {
-    usuarioEnRecuperacion = null;
-    document.getElementById('paso-2').style.display = 'none';
-    document.getElementById('paso-3').style.display = 'none';
-    document.getElementById('paso-4').style.display = 'none';
-    document.getElementById('paso-1').style.display = 'block';
-    document.getElementById('form-email-recuperacion').reset();
+// ==========================================================
+// OCULTAR TODOS LOS PASOS
+// Útil para cambiar entre formularios y pantalla de éxito
+// ==========================================================
+function ocultarTodosLosPasos() {
+    const paso1 = document.getElementById('paso-1');
+    const paso1Admin = document.getElementById('paso-1-admin');
+    const paso4 = document.getElementById('paso-4');
+
+    if (paso1) paso1.style.display = 'none';
+    if (paso1Admin) paso1Admin.style.display = 'none';
+    if (paso4) paso4.style.display = 'none';
 }
 
-// ==================== ENCRIPTACIÓN ====================
-function encriptarPassword(password) {
-    return btoa(password + SECRET_KEY); // Base64 encoding
-}
-
-// ==================== UTILIDADES ====================
-function obtenerUsuariosRegistrados() {
-    return JSON.parse(localStorage.getItem('usuarios_zuarse')) || {};
-}
-
+// ==========================================================
+// VALIDAR EMAIL
+// Verifica formato básico del correo
+// ==========================================================
 function validarEmail(email) {
     const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return regex.test(email);
 }
 
+// ==========================================================
+// CONFIGURAR MANEJO DE ERRORES
+// Agrega funcionalidad al botón de cerrar mensaje
+// ==========================================================
 function configurarErrores() {
     const btnClose = document.querySelector('.btn-close-error');
+
     if (btnClose) {
         btnClose.addEventListener('click', ocultarError);
     }
 }
 
+// ==========================================================
+// MOSTRAR ERROR
+// Muestra el contenedor de error con el mensaje recibido
+// ==========================================================
 function mostrarError(mensaje) {
     const errorDiv = document.getElementById('error-message');
     const errorText = document.getElementById('error-text');
 
+    if (!errorDiv || !errorText) return;
+
     errorText.textContent = mensaje;
     errorDiv.style.display = 'flex';
 
+    // Ocultar automáticamente después de 5 segundos
     setTimeout(ocultarError, 5000);
 }
 
+// ==========================================================
+// OCULTAR ERROR
+// Esconde el contenedor de errores
+// ==========================================================
 function ocultarError() {
-    document.getElementById('error-message').style.display = 'none';
+    const errorDiv = document.getElementById('error-message');
+    if (errorDiv) {
+        errorDiv.style.display = 'none';
+    }
 }

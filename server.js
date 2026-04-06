@@ -11,11 +11,48 @@ const path = require("path");
 // Esta línea fallará si el archivo db.js no existe o no exporta estos módulos.
 const { sql, conectarDB } = require("./db");
 
+// Importa nodemailer para poder enviar correos
+const nodemailer = require("nodemailer");
+
+// Clave secreta usada para "encriptar" la contraseña igual que en el frontend
+const SECRET_KEY = "zuarse_secret_2024";
+
 // Crea una instancia de la aplicación Express. 'app' será tu servidor principal.
 const app = express();
 
 // Define el puerto en el que el servidor escuchará las peticiones. En este caso, el puerto 3000.
 const PORT = 3000;
+
+// =========================================================================================================== RECUPERACIÓN DE CONTRASEÑA ==================================================================================
+
+
+
+// Genera contraseña temporal
+function generarPasswordTemporal(longitud = 8) {
+  const caracteres = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
+  let password = "";
+
+  for (let i = 0; i < longitud; i++) {
+    const indice = Math.floor(Math.random() * caracteres.length);
+    password += caracteres.charAt(indice);
+  }
+
+  return password;
+}
+
+// Encripta igual que frontend
+function encriptarPassword(password) {
+  return Buffer.from(password + SECRET_KEY).toString("base64");
+}
+
+// ================= CONFIGURACIÓN DE CORREO =================
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: "zuarzeweb@gmail.com", // <-- pon tu correo aquí
+    pass: "bgjw wbej isck wmoe"        // <-- pega la clave que generaste
+  }
+});
 
 // --- MIDDLEWARE ---
 // Un middleware es una función que se ejecuta en el medio, entre la petición del cliente y la respuesta del servidor.
@@ -896,11 +933,13 @@ app.post("/api/login", async (req, res) => {
 
   // ================= BUSCAR EN CLIENTES =================
 // Busca al cliente por CORREO o por NOMBRE para permitir login con cualquiera de los dos
+
+
 const clienteResult = await pool.request()
   .input("identificador", sql.NVarChar(150), identificador) // puede ser correo o nombre
   .input("contrasena", sql.NVarChar(100), contrasena) // contraseña encriptada
   .query(`
-    SELECT TOP 1 ID, NOMBRE, CORREO
+    SELECT TOP 1 ID, NOMBRE, CORREO, CONTRASENA
     FROM CLIENTES
     WHERE (CORREO = @identificador OR NOMBRE = @identificador)
       AND CONTRASENA = @contrasena
@@ -908,11 +947,20 @@ const clienteResult = await pool.request()
 
     // 5. Si lo encuentra como CLIENTE
     if (clienteResult.recordset.length > 0) {
-      return res.json({
-        ok: true,
-        tipo: "usuario", // acceso a tienda
-        usuario: identificador
-      });
+      const cliente = clienteResult.recordset[0];
+
+// Desencriptar contraseña guardada
+const passwordPlano = Buffer.from(cliente.CONTRASENA, "base64").toString("utf-8");
+
+// Verificar si es temporal
+const esTemporal = passwordPlano.startsWith("TEMP_");
+
+     return res.json({
+  ok: true,
+  tipo: "usuario",
+  usuario: identificador,
+  requiereCambioPassword: esTemporal
+});
     }
 
     // 6. Si no encontró nada
@@ -935,3 +983,116 @@ const clienteResult = await pool.request()
 // ===========================================================================================================^ LOGIN ^==================================================================================
 
 
+// ================= RECUPERAR CONTRASEÑA CLIENTE =================
+app.post("/api/recuperar-password-cliente", async (req, res) => {
+  try {
+    const { correo } = req.body;
+
+    if (!correo) {
+      return res.status(400).json({
+        ok: false,
+        mensaje: "El correo es obligatorio"
+      });
+    }
+
+    const pool = await conectarDB();
+
+    // Buscar cliente
+    const result = await pool.request()
+      .input("correo", sql.NVarChar(150), correo)
+      .query(`
+        SELECT ID, NOMBRE, CORREO
+        FROM CLIENTES
+        WHERE CORREO = @correo
+      `);
+
+    if (result.recordset.length === 0) {
+      return res.status(404).json({
+        ok: false,
+        mensaje: "No existe una cuenta con ese correo"
+      });
+    }
+
+    const cliente = result.recordset[0];
+
+    // Generar nueva contraseña
+    const nuevaPassword = "TEMP_" + generarPasswordTemporal(8);
+    const passwordEncriptada = encriptarPassword(nuevaPassword);
+
+    // Guardar nueva contraseña
+    await pool.request()
+      .input("id", sql.Int, cliente.ID)
+      .input("contrasena", sql.NVarChar(100), passwordEncriptada)
+      .query(`
+        UPDATE CLIENTES
+        SET CONTRASENA = @contrasena
+        WHERE ID = @id
+      `);
+
+    // Enviar correo
+    await transporter.sendMail({
+      from: '"ZUARSE" <zuarzeweb@gmail.com>',
+      to: cliente.CORREO,
+      subject: "Recuperación de contraseña",
+      html: `
+        <h2>Recuperación de contraseña</h2>
+        <p>Hola ${cliente.NOMBRE}</p>
+        <p>Tu nueva contraseña temporal es:</p>
+        <h3>${nuevaPassword}</h3>
+        <p>Inicia sesión y cámbiala lo antes posible.</p>
+      `
+    });
+
+    res.json({
+      ok: true,
+      mensaje: "Correo enviado correctamente"
+    });
+
+  } catch (error) {
+    console.error("Error en recuperar contraseña:", error);
+    res.status(500).json({
+      ok: false,
+      mensaje: "Error al recuperar contraseña"
+    });
+  }
+});
+
+
+// ================= CAMBIAR CONTRASEÑA =================
+app.post("/api/cambiar-password", async (req, res) => {
+  try {
+
+    const { usuario, nuevaPassword } = req.body;
+
+    if (!usuario || !nuevaPassword) {
+      return res.status(400).json({
+        ok: false,
+        mensaje: "Datos incompletos"
+      });
+    }
+
+    const pool = await conectarDB();
+
+    // actualizar por correo o nombre
+    const result = await pool.request()
+      .input("usuario", sql.NVarChar(150), usuario)
+      .input("contrasena", sql.NVarChar(100), nuevaPassword)
+      .query(`
+        UPDATE CLIENTES
+        SET CONTRASENA = @contrasena
+        WHERE CORREO = @usuario OR NOMBRE = @usuario
+      `);
+
+    res.json({
+      ok: true,
+      mensaje: "Contraseña actualizada"
+    });
+
+  } catch (error) {
+    console.error("Error cambiar password:", error);
+    res.status(500).json({
+      ok: false,
+      mensaje: "Error en servidor"
+    });
+  }
+});
