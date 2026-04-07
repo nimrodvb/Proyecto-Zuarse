@@ -1386,3 +1386,237 @@ app.delete("/api/empleados/:id", async (req, res) => {
 });
 
 // ===========================================================================================================^ EMPLEADOS / USUARIOS ^==================================================================================
+
+
+// =========================================================================================================== PROVEEDORES ==================================================================================
+
+// ----------------------------------------------------------------------------------------------------------- OBTENER TODOS LOS PROVEEDORES ------------------------------------------------------------------
+// Esta ruta trae todos los proveedores desde la tabla PROVEEDORES.
+app.get("/api/proveedores", async (req, res) => {
+  try {
+    // Se conecta a la base de datos
+    const pool = await conectarDB();
+
+    // Consulta todos los proveedores
+    const result = await pool.request().query(`
+      SELECT 
+        ID,
+        NOMBRE,
+        DIRECCION,
+        TELEFONO,
+        FECHA
+      FROM PROVEEDORES
+      ORDER BY ID DESC
+    `);
+
+    // Devuelve los datos al frontend
+    res.json({
+      ok: true,
+      proveedores: result.recordset
+    });
+
+  } catch (error) {
+    console.error("Error en GET /api/proveedores:", error);
+
+    res.status(500).json({
+      ok: false,
+      mensaje: "Error al obtener proveedores"
+    });
+  }
+});
+
+// ----------------------------------------------------------------------------------------------------------- OBTENER UN PROVEEDOR POR ID ---------------------------------------------------------------------
+// Esta ruta busca un proveedor específico por su ID.
+app.get("/api/proveedores/:id", async (req, res) => {
+  try {
+    // Obtiene el ID enviado en la URL
+    const { id } = req.params;
+
+    // Se conecta a la base de datos
+    const pool = await conectarDB();
+
+    // Consulta el proveedor por ID
+    const result = await pool.request()
+      .input("id", sql.Int, id)
+      .query(`
+        SELECT 
+          ID,
+          NOMBRE,
+          DIRECCION,
+          TELEFONO,
+          FECHA
+        FROM PROVEEDORES
+        WHERE ID = @id
+      `);
+
+    // Si no existe, devuelve 404
+    if (result.recordset.length === 0) {
+      return res.status(404).json({
+        ok: false,
+        mensaje: "Proveedor no encontrado"
+      });
+    }
+
+    // Devuelve el proveedor encontrado
+    res.json(result.recordset[0]);
+
+  } catch (error) {
+    console.error("Error en GET /api/proveedores/:id:", error);
+
+    res.status(500).json({
+      ok: false,
+      mensaje: "Error al obtener proveedor"
+    });
+  }
+});
+
+// ----------------------------------------------------------------------------------------------------------- CREAR PROVEEDOR ----------------------------------------------------------------------------------
+// Esta ruta crea un proveedor nuevo en la tabla PROVEEDORES.
+app.post("/api/proveedores", async (req, res) => {
+  try {
+    // Obtiene los datos enviados desde el frontend
+    const { nombre, direccion, telefono } = req.body;
+
+    // Validar nombre obligatorio
+    if (!nombre || !nombre.trim()) {
+      return res.status(400).json({
+        ok: false,
+        mensaje: "El nombre del proveedor es obligatorio"
+      });
+    }
+
+    // Se conecta a la base de datos
+    const pool = await conectarDB();
+
+    // Inserta el proveedor nuevo
+    await pool.request()
+      .input("nombre", sql.NVarChar(100), nombre.trim())
+      .input("direccion", sql.NVarChar(200), direccion ? direccion.trim() : null)
+      .input("telefono", sql.NVarChar(20), telefono ? telefono.trim() : null)
+      .query(`
+        INSERT INTO PROVEEDORES (NOMBRE, DIRECCION, TELEFONO, FECHA)
+        VALUES (@nombre, @direccion, @telefono, GETDATE())
+      `);
+
+    // Respuesta de éxito
+    res.json({
+      ok: true,
+      mensaje: "Proveedor creado correctamente"
+    });
+
+  } catch (error) {
+    console.error("Error en POST /api/proveedores:", error);
+
+    res.status(500).json({
+      ok: false,
+      mensaje: "Error al crear proveedor"
+    });
+  }
+});
+
+// ----------------------------------------------------------------------------------------------------------- ACTUALIZAR PROVEEDOR ---------------------------------------------------------------------------
+// Esta ruta actualiza un proveedor existente.
+app.put("/api/proveedores/:id", async (req, res) => {
+  try {
+    // Obtiene el ID desde la URL
+    const { id } = req.params;
+
+    // Obtiene los datos enviados desde el frontend
+    const { nombre, direccion, telefono } = req.body;
+
+    // Validar nombre obligatorio
+    if (!nombre || !nombre.trim()) {
+      return res.status(400).json({
+        ok: false,
+        mensaje: "El nombre del proveedor es obligatorio"
+      });
+    }
+
+    // Se conecta a la base de datos
+    const pool = await conectarDB();
+
+    // Actualiza el proveedor
+    const result = await pool.request()
+      .input("id", sql.Int, id)
+      .input("nombre", sql.NVarChar(100), nombre.trim())
+      .input("direccion", sql.NVarChar(200), direccion ? direccion.trim() : null)
+      .input("telefono", sql.NVarChar(20), telefono ? telefono.trim() : null)
+      .query(`
+        UPDATE PROVEEDORES
+        SET 
+          NOMBRE = @nombre,
+          DIRECCION = @direccion,
+          TELEFONO = @telefono
+        WHERE ID = @id
+      `);
+
+    // Si no actualizó filas, no existía
+    if (result.rowsAffected[0] === 0) {
+      return res.status(404).json({
+        ok: false,
+        mensaje: "Proveedor no encontrado"
+      });
+    }
+
+    // Respuesta de éxito
+    res.json({
+      ok: true,
+      mensaje: "Proveedor actualizado correctamente"
+    });
+
+  } catch (error) {
+    console.error("Error en PUT /api/proveedores/:id:", error);
+
+    res.status(500).json({
+      ok: false,
+      mensaje: "Error al actualizar proveedor"
+    });
+  }
+});
+
+// ----------------------------------------------------------------------------------------------------------- ELIMINAR PROVEEDOR ----------------------------------------------------------------------------
+// Esta ruta elimina un proveedor por ID.
+app.delete("/api/proveedores/:id", async (req, res) => {
+  try {
+    // Obtiene el ID desde la URL
+    const { id } = req.params;
+
+    // Se conecta a la base de datos
+    const pool = await conectarDB();
+
+    // Elimina el proveedor
+    const result = await pool.request()
+      .input("id", sql.Int, id)
+      .query(`
+        DELETE FROM PROVEEDORES
+        WHERE ID = @id
+      `);
+
+    // Si no eliminó ninguna fila
+    if (result.rowsAffected[0] === 0) {
+      return res.status(404).json({
+        ok: false,
+        mensaje: "Proveedor no encontrado"
+      });
+    }
+
+    // Respuesta de éxito
+    res.json({
+      ok: true,
+      mensaje: "Proveedor eliminado correctamente"
+    });
+
+  } catch (error) {
+    console.error("Error en DELETE /api/proveedores/:id:", error);
+
+    res.status(500).json({
+      ok: false,
+      mensaje: "Error al eliminar proveedor"
+    });
+  }
+});
+
+// ===========================================================================================================^ PROVEEDORES ^==================================================================================
+
+
+
