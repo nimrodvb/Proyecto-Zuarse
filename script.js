@@ -486,9 +486,9 @@ async function realizarCompra(e) {
     // Mostrar pasarela de pago antes de procesar
     mostrarPasarelaPago(total, async function() {
         // Crear pedido local para usarlo en confirmación/email
-        const idPedido = generarIdPedido();
+        
         const pedido = {
-            id: idPedido,
+            id: null,
             cliente_email: sesion.email || sesion.usuario,
             cliente_nombre: sesion.email ? sesion.email.split('@')[0] : sesion.usuario,
             items: items,
@@ -529,11 +529,15 @@ async function realizarCompra(e) {
 
             console.log('✅ [COMPRA] Pedido guardado en BD:', data);
 
+            // ✅ usar el ID real de la BD
+            pedido.id = data.id_pedido;
+
         } catch (error) {
             console.error('❌ [COMPRA] Error guardando pedido en BD:', error);
             alert('Error al guardar el pedido en la base de datos');
             return;
         }
+        
         
         // Mostrar confirmación
         mostrarConfirmacionCompra(pedido);
@@ -656,9 +660,7 @@ function generarPDFCliente(pedido) {
     html2pdf().set(options).from(element).save();
 }
 
-function generarIdPedido() {
-    return 'PED-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9).toUpperCase();
-}
+
 
 // ==================== ENVÍO DE EMAIL AUTOMÁTICO ====================
 function enviarEmailPedido(pedido) {
