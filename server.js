@@ -1096,3 +1096,293 @@ app.post("/api/cambiar-password", async (req, res) => {
     });
   }
 });
+
+// ===========================================================================================================^ EMPLEADOS ^==================================================================================
+
+// ================= OBTENER EMPLEADOS =================
+app.get("/api/empleados", async (req, res) => {
+  try {
+    const pool = await conectarDB();
+
+    const result = await pool.request().query(`
+      SELECT ID, NOMBRE
+      FROM USUARIOS
+      ORDER BY ID DESC
+    `);
+
+    res.json({
+      ok: true,
+      empleados: result.recordset
+    });
+
+  } catch (error) {
+    console.error("Error en /api/empleados:", error);
+
+    res.status(500).json({
+      ok: false,
+      mensaje: "Error al obtener empleados"
+    });
+  }
+});
+
+function escapeHtml(texto) {
+    const div = document.createElement('div');
+    div.textContent = texto;
+    return div.innerHTML;
+}
+
+// =========================================================================================================== EMPLEADOS / USUARIOS ==================================================================================
+
+// ----------------------------------------------------------------------------------------------------------- OBTENER EMPLEADOS -------------------------------------------------------------------------------
+// Esta ruta trae todos los empleados desde la tabla USUARIOS.
+// Solo devuelve ID y NOMBRE porque por ahora eso es lo único que necesitas mostrar.
+app.get("/api/empleados", async (req, res) => {
+  try {
+    // Se conecta a la base de datos
+    const pool = await conectarDB();
+
+    // Consulta los empleados ordenados del más reciente al más antiguo
+    const result = await pool.request().query(`
+      SELECT ID, NOMBRE
+      FROM USUARIOS
+      ORDER BY ID DESC
+    `);
+
+    // Devuelve los empleados al frontend
+    res.json({
+      ok: true,
+      empleados: result.recordset
+    });
+
+  } catch (error) {
+    // Muestra el error real en la consola del servidor
+    console.error("Error en GET /api/empleados:", error);
+
+    // Respuesta de error al frontend
+    res.status(500).json({
+      ok: false,
+      mensaje: "Error al obtener empleados"
+    });
+  }
+});
+
+// ----------------------------------------------------------------------------------------------------------- CREAR EMPLEADO ----------------------------------------------------------------------------------
+// Esta ruta crea un nuevo empleado en la tabla USUARIOS.
+app.post("/api/empleados", async (req, res) => {
+  try {
+    // Obtiene los datos enviados desde el frontend
+    const { nombre, contrasena } = req.body;
+
+    // Validar que el nombre venga
+    if (!nombre || !nombre.trim()) {
+      return res.status(400).json({
+        ok: false,
+        mensaje: "El nombre de usuario es obligatorio"
+      });
+    }
+
+    // Validar que la contraseña venga
+    if (!contrasena) {
+      return res.status(400).json({
+        ok: false,
+        mensaje: "La contraseña es obligatoria"
+      });
+    }
+
+    // Se conecta a la base de datos
+    const pool = await conectarDB();
+
+    // Verificar si ya existe un empleado con ese nombre
+    const existe = await pool.request()
+      .input("nombre", sql.NVarChar(100), nombre.trim())
+      .query(`
+        SELECT ID
+        FROM USUARIOS
+        WHERE NOMBRE = @nombre
+      `);
+
+    // Si ya existe, devolver error
+    if (existe.recordset.length > 0) {
+      return res.status(400).json({
+        ok: false,
+        mensaje: "Ya existe un empleado con ese nombre"
+      });
+    }
+
+    // Insertar el nuevo empleado
+    await pool.request()
+      .input("nombre", sql.NVarChar(100), nombre.trim())
+      .input("contrasena", sql.NVarChar(255), contrasena)
+      .query(`
+        INSERT INTO USUARIOS (NOMBRE, CONTRASENA)
+        VALUES (@nombre, @contrasena)
+      `);
+
+    // Respuesta de éxito
+    res.json({
+      ok: true,
+      mensaje: "Empleado creado correctamente"
+    });
+
+  } catch (error) {
+    console.error("Error en POST /api/empleados:", error);
+
+    res.status(500).json({
+      ok: false,
+      mensaje: "Error al crear empleado"
+    });
+  }
+});
+
+// ----------------------------------------------------------------------------------------------------------- ACTUALIZAR EMPLEADO -----------------------------------------------------------------------------
+// Esta ruta actualiza un empleado existente.
+// Puede actualizar:
+// 1. solo el nombre
+// 2. nombre y contraseña, si se envía una nueva contraseña
+app.put("/api/empleados/:id", async (req, res) => {
+  try {
+    // Obtiene el ID desde la URL
+    const { id } = req.params;
+
+    // Obtiene los datos enviados desde el frontend
+    const { nombre, contrasena } = req.body;
+
+    // Validar que el nombre venga
+    if (!nombre || !nombre.trim()) {
+      return res.status(400).json({
+        ok: false,
+        mensaje: "El nombre de usuario es obligatorio"
+      });
+    }
+
+    // Se conecta a la base de datos
+    const pool = await conectarDB();
+
+    // Verificar si ya existe OTRO empleado con ese mismo nombre
+    const existe = await pool.request()
+      .input("id", sql.Int, id)
+      .input("nombre", sql.NVarChar(100), nombre.trim())
+      .query(`
+        SELECT ID
+        FROM USUARIOS
+        WHERE NOMBRE = @nombre
+          AND ID <> @id
+      `);
+
+    // Si existe otro con ese mismo nombre, devolver error
+    if (existe.recordset.length > 0) {
+      return res.status(400).json({
+        ok: false,
+        mensaje: "Ya existe otro empleado con ese nombre"
+      });
+    }
+
+    // ---------------------------------------------------------------------------------
+    // Si viene contraseña nueva, actualizamos nombre y contraseña
+    // ---------------------------------------------------------------------------------
+    if (contrasena) {
+      const result = await pool.request()
+        .input("id", sql.Int, id)
+        .input("nombre", sql.NVarChar(100), nombre.trim())
+        .input("contrasena", sql.NVarChar(255), contrasena)
+        .query(`
+          UPDATE USUARIOS
+          SET 
+            NOMBRE = @nombre,
+            CONTRASENA = @contrasena
+          WHERE ID = @id
+        `);
+
+      // Si no encontró fila para actualizar
+      if (result.rowsAffected[0] === 0) {
+        return res.status(404).json({
+          ok: false,
+          mensaje: "Empleado no encontrado"
+        });
+      }
+
+      return res.json({
+        ok: true,
+        mensaje: "Empleado actualizado correctamente"
+      });
+    }
+
+    // ---------------------------------------------------------------------------------
+    // Si NO viene contraseña, solo actualizamos nombre
+    // ---------------------------------------------------------------------------------
+    const result = await pool.request()
+      .input("id", sql.Int, id)
+      .input("nombre", sql.NVarChar(100), nombre.trim())
+      .query(`
+        UPDATE USUARIOS
+        SET NOMBRE = @nombre
+        WHERE ID = @id
+      `);
+
+    // Si no encontró fila para actualizar
+    if (result.rowsAffected[0] === 0) {
+      return res.status(404).json({
+        ok: false,
+        mensaje: "Empleado no encontrado"
+      });
+    }
+
+    // Respuesta de éxito
+    res.json({
+      ok: true,
+      mensaje: "Empleado actualizado correctamente"
+    });
+
+  } catch (error) {
+    console.error("Error en PUT /api/empleados/:id:", error);
+
+    res.status(500).json({
+      ok: false,
+      mensaje: "Error al actualizar empleado"
+    });
+  }
+});
+
+// ----------------------------------------------------------------------------------------------------------- ELIMINAR EMPLEADO -------------------------------------------------------------------------------
+// Esta ruta elimina un empleado por ID desde la tabla USUARIOS.
+app.delete("/api/empleados/:id", async (req, res) => {
+  try {
+    // Obtiene el ID desde la URL
+    const { id } = req.params;
+
+    // Se conecta a la base de datos
+    const pool = await conectarDB();
+
+    // Ejecuta el DELETE
+    const result = await pool.request()
+      .input("id", sql.Int, id)
+      .query(`
+        DELETE FROM USUARIOS
+        WHERE ID = @id
+      `);
+
+    // Si no eliminó ninguna fila
+    if (result.rowsAffected[0] === 0) {
+      return res.status(404).json({
+        ok: false,
+        mensaje: "Empleado no encontrado"
+      });
+    }
+
+    // Respuesta de éxito
+    res.json({
+      ok: true,
+      mensaje: "Empleado eliminado correctamente"
+    });
+
+  } catch (error) {
+    console.error("Error en DELETE /api/empleados/:id:", error);
+
+    res.status(500).json({
+      ok: false,
+      mensaje: "Error al eliminar empleado"
+    });
+  }
+});
+
+// ===========================================================================================================^ EMPLEADOS / USUARIOS ^==================================================================================

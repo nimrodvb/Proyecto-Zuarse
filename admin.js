@@ -1832,121 +1832,292 @@ function renderizarGraficoVentas(pedidos) {
 }
 
 // ========================================================================================================= EQUIPO (EMPLEADOS) ===========================================================
+
+// =========================================================================================================
+// EQUIPO (EMPLEADOS)
+// Este bloque ya trabaja con la tabla USUARIOS en SQL Server
+// y deja de usar localStorage.
+// =========================================================================================================
+
+// Variable global para saber si estamos editando un empleado existente.
+// Si vale null, significa que estamos creando uno nuevo.
+// Si tiene un número, ese número será el ID del empleado a editar.
+//let empleadoEditando = null;
+
+// ---------------------------------------------------------------------------------------------------------
+// MUESTRA EL FORMULARIO PARA CREAR UN NUEVO EMPLEADO
+// ---------------------------------------------------------------------------------------------------------
 function mostrarFormEmpleado() {
+    // Como es nuevo, limpiamos el ID de edición
     empleadoEditando = null;
+
+    // Limpiamos todo el formulario
     document.getElementById('formulario-empleado').reset();
-    document.getElementById('emp-password').required = true; // Password obligatorio al crear
-    document.getElementById('form-empleado').style.display = 'block';
+
+    // Al crear un nuevo empleado, la contraseña sí es obligatoria
+    document.getElementById('emp-password').required = true;
+
+    // Cambiamos el título del formulario
     document.querySelector('#form-empleado h3').textContent = 'Nuevo Empleado';
+
+    // Mostramos el formulario
+    document.getElementById('form-empleado').style.display = 'block';
 }
 
+// ---------------------------------------------------------------------------------------------------------
+// OCULTA EL FORMULARIO Y LIMPIA SU ESTADO
+// ---------------------------------------------------------------------------------------------------------
 function ocultarFormEmpleado() {
+    // Oculta el formulario
     document.getElementById('form-empleado').style.display = 'none';
+
+    // Limpia los campos
     document.getElementById('formulario-empleado').reset();
+
+    // Resetea el ID de edición
     empleadoEditando = null;
+
+    // Dejamos la contraseña como obligatoria por defecto
+    // para cuando el usuario vuelva a crear uno nuevo
+    document.getElementById('emp-password').required = true;
+
+    // Restauramos el título original
+    document.querySelector('#form-empleado h3').textContent = 'Formulario de Empleado';
 }
 
-function guardarEmpleado(e) {
+// ---------------------------------------------------------------------------------------------------------
+// GUARDA EMPLEADO
+// - Si empleadoEditando es null => CREA
+// - Si empleadoEditando tiene ID => EDITA
+// ---------------------------------------------------------------------------------------------------------
+async function guardarEmpleado(e) {
     e.preventDefault();
 
-    const usuario = document.getElementById('emp-usuario').value.trim().toLowerCase();
-    const password = document.getElementById('emp-password').value;
-    const rol = document.getElementById('emp-rol').value;
+    // Tomamos el nombre de usuario escrito
+    const usuario = document.getElementById('emp-usuario').value.trim();
 
+    // Tomamos la contraseña escrita (puede venir vacía al editar)
+    const password = document.getElementById('emp-password').value;
+
+    // Validación básica
     if (!usuario) {
-        alert('El usuario es obligatorio');
+        alert('El nombre de usuario es obligatorio');
         return;
     }
 
-    // Si es nuevo, requerimos contraseña
+    // Si estamos creando uno nuevo, la contraseña sí es obligatoria
     if (!empleadoEditando && !password) {
         alert('La contraseña es obligatoria para nuevos empleados');
         return;
     }
 
-    let empleados = JSON.parse(localStorage.getItem('empleados_zuarse')) || [];
+    try {
+        let respuesta;
+        let resultado;
 
-    // Validar usuario único
-    const existe = empleados.some(emp => emp.usuario === usuario && (!empleadoEditando || emp.id !== empleadoEditando.id));
-    if (existe || usuario === 'admin') {
-        alert('Ese nombre de usuario ya está en uso');
-        return;
+        // ==============================================================================================
+        // EDITAR EMPLEADO EXISTENTE
+        // ==============================================================================================
+        if (empleadoEditando) {
+
+            // Armamos el objeto que se enviará al backend
+            const datosActualizar = {
+                nombre: usuario
+            };
+
+            // Solo enviamos contraseña si el usuario escribió una nueva
+            if (password) {
+                datosActualizar.contrasena = btoa(password + SECRET_KEY);
+            }
+
+            // Enviar actualización al backend
+            respuesta = await fetch(`http://localhost:3000/api/empleados/${empleadoEditando}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(datosActualizar)
+            });
+
+            resultado = await respuesta.json();
+        }
+
+        // ==============================================================================================
+        // CREAR NUEVO EMPLEADO
+        // ==============================================================================================
+        else {
+            respuesta = await fetch('http://localhost:3000/api/empleados', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    nombre: usuario,
+                    contrasena: btoa(password + SECRET_KEY)
+                })
+            });
+
+            resultado = await respuesta.json();
+        }
+
+        // Si el backend devuelve error
+        if (!resultado.ok) {
+            alert(resultado.mensaje || 'Error al guardar empleado');
+            return;
+        }
+
+        // Si todo salió bien:
+        // 1. ocultamos formulario
+        // 2. recargamos tabla
+        // 3. mostramos mensaje
+        ocultarFormEmpleado();
+        cargarEquipo();
+        alert(resultado.mensaje || 'Empleado guardado correctamente');
+
+    } catch (error) {
+        console.error('Error guardando empleado:', error);
+        alert('Error al guardar empleado');
     }
-
-    const empleadoData = {
-        id: empleadoEditando?.id || Date.now(),
-        usuario: usuario,
-        rol: rol,
-        fechaCreacion: empleadoEditando?.fechaCreacion || new Date().toISOString()
-    };
-
-    // Manejo de contraseña (solo actualizar si se escribió algo o es nuevo)
-    if (password) {
-        empleadoData.passwordEncriptada = btoa(password + SECRET_KEY);
-    } else if (empleadoEditando) {
-        empleadoData.passwordEncriptada = empleadoEditando.passwordEncriptada;
-    }
-
-    if (empleadoEditando) {
-        empleados = empleados.map(e => e.id === empleadoEditando.id ? empleadoData : e);
-    } else {
-        empleados.push(empleadoData);
-    }
-
-    localStorage.setItem('empleados_zuarse', JSON.stringify(empleados));
-    ocultarFormEmpleado();
-    cargarEquipo();
-    alert('Empleado guardado correctamente');
 }
 
-function cargarEquipo() {
-    const empleados = JSON.parse(localStorage.getItem('empleados_zuarse')) || [];
+// ---------------------------------------------------------------------------------------------------------
+// CARGAR EQUIPO DESDE SQL SERVER
+// Lee la tabla USUARIOS desde el backend y pinta la tabla.
+// Solo muestra el nombre del empleado y los botones.
+// ---------------------------------------------------------------------------------------------------------
+async function cargarEquipo() {
+
     const tbody = document.getElementById('tbody-equipo');
     const sinEquipo = document.getElementById('sin-equipo');
 
-    if (!tbody) return;
+    // Limpiar tabla antes de volver a cargar
     tbody.innerHTML = '';
 
-    if (empleados.length === 0) {
-        sinEquipo.style.display = 'block';
-        return;
-    }
-    sinEquipo.style.display = 'none';
+    try {
+        const res = await fetch('http://localhost:3000/api/empleados');
+        const data = await res.json();
 
-    empleados.forEach(emp => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${escapeHtml(emp.usuario)}</td>
-            <td><span class="badge badge-${emp.rol === 'admin' ? 'procesando' : 'pendiente'}">${emp.rol.toUpperCase()}</span></td>
-            <td>${new Date(emp.fechaCreacion).toLocaleDateString()}</td>
-            <td>
-                <button class="btn-editar" onclick="editarEmpleado(${emp.id})">Editar</button>
-                <button class="btn-eliminar" onclick="eliminarEmpleado(${emp.id})">Eliminar</button>
-            </td>
-        `;
-        tbody.appendChild(row);
-    });
+        // Si no hay empleados o vino algo incorrecto
+        if (!data.ok || !data.empleados || data.empleados.length === 0) {
+            sinEquipo.style.display = 'block';
+            return;
+        }
+
+        // Si sí hay empleados, ocultamos el mensaje vacío
+        sinEquipo.style.display = 'none';
+
+        // Recorremos cada empleado que viene desde SQL Server
+        data.empleados.forEach(emp => {
+
+            const row = document.createElement('tr');
+
+            // IMPORTANTE:
+            // emp.ID viene de SQL Server
+            // emp.NOMBRE viene de SQL Server
+            row.innerHTML = `
+                <td>${escapeHtml(emp.NOMBRE)}</td>
+                <td>
+                    <button 
+                        class="btn-editar" 
+                        onclick="editarEmpleado(${emp.ID}, '${String(emp.NOMBRE).replace(/'/g, "\\'")}')">
+                        Editar
+                    </button>
+
+                    <button 
+                        class="btn-eliminar" 
+                        onclick="eliminarEmpleado(${emp.ID})">
+                        Eliminar
+                    </button>
+                </td>
+            `;
+
+            tbody.appendChild(row);
+        });
+
+    } catch (error) {
+        console.error("Error cargando empleados:", error);
+        sinEquipo.style.display = 'block';
+    }
 }
 
-function editarEmpleado(id) {
-    const empleados = JSON.parse(localStorage.getItem('empleados_zuarse')) || [];
-    const emp = empleados.find(e => e.id === id);
-    if (!emp) return;
+// ---------------------------------------------------------------------------------------------------------
+// EDITAR EMPLEADO
+// Abre el formulario y carga el nombre del empleado seleccionado.
+// La contraseña se deja en blanco para que solo se cambie si el admin escribe una nueva.
+// ---------------------------------------------------------------------------------------------------------
+function editarEmpleado(id, nombre) {
+    // Guardamos el ID del empleado que se va a editar
+    empleadoEditando = id;
 
-    empleadoEditando = emp;
-    document.getElementById('emp-usuario').value = emp.usuario;
-    document.getElementById('emp-rol').value = emp.rol;
+    // Cargamos el nombre en el input
+    document.getElementById('emp-usuario').value = nombre;
+
+    // Dejamos la contraseña vacía
     document.getElementById('emp-password').value = '';
-    document.getElementById('emp-password').required = false; // Opcional al editar
 
+    // Al editar, la contraseña NO es obligatoria
+    document.getElementById('emp-password').required = false;
+
+    // Cambiamos el título del formulario
     document.querySelector('#form-empleado h3').textContent = 'Editar Empleado';
+
+    // Mostramos el formulario
     document.getElementById('form-empleado').style.display = 'block';
 }
 
-function eliminarEmpleado(id) {
+// ---------------------------------------------------------------------------------------------------------
+// ELIMINAR EMPLEADO
+// Borra un empleado de la tabla USUARIOS usando su ID.
+// ---------------------------------------------------------------------------------------------------------
+async function eliminarEmpleado(id) {
+    // Confirmación antes de borrar
     if (!confirm('¿Seguro que deseas eliminar este empleado?')) return;
-    let empleados = JSON.parse(localStorage.getItem('empleados_zuarse')) || [];
-    empleados = empleados.filter(e => e.id !== id);
-    localStorage.setItem('empleados_zuarse', JSON.stringify(empleados));
-    cargarEquipo();
+
+    try {
+        const respuesta = await fetch(`http://localhost:3000/api/empleados/${id}`, {
+            method: 'DELETE'
+        });
+
+        const resultado = await respuesta.json();
+
+        if (!resultado.ok) {
+            alert(resultado.mensaje || 'Error al eliminar empleado');
+            return;
+        }
+
+        // Recargar tabla después de borrar
+        cargarEquipo();
+        alert(resultado.mensaje || 'Empleado eliminado correctamente');
+
+    } catch (error) {
+        console.error('Error eliminando empleado:', error);
+        alert('Error al eliminar empleado');
+    }
 }
+
+// ---------------------------------------------------------------------------------------------------------
+// EVENTOS DEL MÓDULO DE EMPLEADOS
+// Conectan botones y formulario.
+// Esto debe ejecutarse cuando ya existe el DOM.
+// ---------------------------------------------------------------------------------------------------------
+document.addEventListener('DOMContentLoaded', function () {
+
+    // Botón "Nuevo Empleado"
+    const btnNuevoEmpleado = document.getElementById('btn-nuevo-empleado');
+    if (btnNuevoEmpleado) {
+        btnNuevoEmpleado.addEventListener('click', mostrarFormEmpleado);
+    }
+
+    // Botón "Cancelar"
+    const btnCancelarEmpleado = document.getElementById('cancelar-empleado');
+    if (btnCancelarEmpleado) {
+        btnCancelarEmpleado.addEventListener('click', ocultarFormEmpleado);
+    }
+
+    // Submit del formulario
+    const formularioEmpleado = document.getElementById('formulario-empleado');
+    if (formularioEmpleado) {
+        formularioEmpleado.addEventListener('submit', guardarEmpleado);
+    }
+
+});
