@@ -352,19 +352,7 @@ function vaciarCarrito() {
     return false;
 }
 
-// ==================== FUNCIONES DE TOTAL ====================
-// function actualizarTotalCarrito() {
-//     const filas = lista.querySelectorAll('tr');
-//     let total = 0;
-    
-//     filas.forEach(fila => {
-//         const precioText = fila.querySelector('td:nth-child(3)').textContent;
-//         const precio = parseFloat(precioText.replace('$', ''));
-//         total += precio;
-//     });
-    
-//     document.getElementById('total-carrito').textContent = total.toFixed(2);
-// }
+
 function actualizarTotalCarrito() {
     const filas = lista.querySelectorAll('tr');
     let total = 0;
@@ -429,36 +417,48 @@ function realizarCompra(e) {
     let total = 0;
     
     filas.forEach((fila, index) => {
-        try {
-            const celdas = fila.querySelectorAll('td');
-            if (celdas.length < 3) {
-                console.warn(`⚠️ [COMPRA] Fila ${index} incompleta`);
-                return;
-            }
-            
-            const imagen = fila.querySelector('img') ? fila.querySelector('img').src : '';
-            const nombre = celdas[1] ? celdas[1].textContent.trim() : 'Producto sin nombre';
-            const precioText = celdas[2] ? celdas[2].textContent.trim() : '0';
-            const precio = parseFloat(precioText.replace('$', '').replace(',', '.'));
-            
-            console.log(`📌 [COMPRA] Producto ${index}:`, {nombre, precio});
-            
-            if (isNaN(precio)) {
-                console.warn(`⚠️ [COMPRA] Precio inválido: ${precioText}`);
-                return;
-            }
-            
-            items.push({
-                nombre: nombre,
-                precio: precio,
-                imagen: imagen
-            });
-            
-            total += precio;
-        } catch (error) {
-            console.error(`❌ [COMPRA] Error procesando fila ${index}:`, error);
+    try {
+        const celdas = fila.querySelectorAll('td');
+
+        console.log('-------------------');
+        console.log('Fila index:', index);
+        console.log('HTML fila:', fila.innerHTML);
+        console.log('Cantidad de celdas:', celdas.length);
+
+        celdas.forEach((td, i) => {
+            console.log(`Celda ${i}:`, td.textContent.trim());
+        });
+
+        if (celdas.length < 3) {
+            console.warn(`⚠️ [COMPRA] Fila ${index} incompleta`);
+            return;
         }
-    });
+
+        const imagen = fila.querySelector('img') ? fila.querySelector('img').src : '';
+        const nombre = celdas[1] ? celdas[1].textContent.trim() : 'Producto sin nombre';
+        const precioText = celdas[2] ? celdas[2].textContent.trim() : '0';
+        const precio = parseFloat(precioText.replace(/[^\d.]/g, '').trim());
+
+        console.log('Nombre:', nombre);
+        console.log('Precio texto:', precioText);
+        console.log('Precio parseado:', precio);
+
+        if (isNaN(precio)) {
+            console.warn(`⚠️ [COMPRA] Precio inválido: ${precioText}`);
+            return;
+        }
+
+        items.push({
+            nombre: nombre,
+            precio: precio,
+            imagen: imagen
+        });
+
+        total += precio;
+    } catch (error) {
+        console.error(`❌ [COMPRA] Error procesando fila ${index}:`, error);
+    }
+});
     
     console.log('DEBUG: Final items array constructed in realizarCompra:', items);
 
