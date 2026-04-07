@@ -254,7 +254,7 @@ function mostrarMasProductos() {
     }
 }
 
-// CARRITO DE COMPRAS
+///////////////////////////////////////////////////////////////////////////////// CARRITO DE COMPRAS//////////////////////////////////////////////////////////
 let carrito;
 let elementos1;
 let lista;
@@ -329,6 +329,7 @@ function insertarCarrito(elemento) {
         </td>
     `;
     lista.appendChild(row);
+    actualizarTotalCarrito();
 }
 
 function eliminarElemento(e) {
@@ -352,16 +353,32 @@ function vaciarCarrito() {
 }
 
 // ==================== FUNCIONES DE TOTAL ====================
+// function actualizarTotalCarrito() {
+//     const filas = lista.querySelectorAll('tr');
+//     let total = 0;
+    
+//     filas.forEach(fila => {
+//         const precioText = fila.querySelector('td:nth-child(3)').textContent;
+//         const precio = parseFloat(precioText.replace('$', ''));
+//         total += precio;
+//     });
+    
+//     document.getElementById('total-carrito').textContent = total.toFixed(2);
+// }
 function actualizarTotalCarrito() {
     const filas = lista.querySelectorAll('tr');
     let total = 0;
-    
+
     filas.forEach(fila => {
         const precioText = fila.querySelector('td:nth-child(3)').textContent;
-        const precio = parseFloat(precioText.replace('$', ''));
+
+        // Elimina cualquier símbolo que no sea número o punto
+        const precioLimpio = precioText.replace(/[^\d.]/g, '');
+
+        const precio = parseFloat(precioLimpio) || 0;
         total += precio;
     });
-    
+
     document.getElementById('total-carrito').textContent = total.toFixed(2);
 }
 
