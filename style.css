@@ -88,7 +88,7 @@ img {
     display: none;
 }
 
-.submenu:hover #carrito {
+/* .submenu:hover #carrito {
     display: block;
     position: absolute;
     right: 0;
@@ -98,7 +98,75 @@ img {
     background-color: #4E4B5076;
     padding: 20px;
     min-width: 400px;
+} */
+
+.submenu:hover #carrito {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    right: 0;
+    top: 100%;
+    z-index: 1;
+    backdrop-filter: blur(10px);
+    background-color: #4E4B5076;
+    padding: 20px;
+    min-width: 400px;
+    max-height: 80vh;      /* altura máxima del carrito */
+    overflow: hidden;      /* evita que todo crezca */
 }
+
+/* La tabla o lista de productos del carrito tendrá scroll */
+#lista-carrito {
+    display: block;
+    max-height: 50vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Para que las filas sigan ocupando bien el ancho */
+#lista-carrito tbody,
+#lista-carrito thead,
+#lista-carrito tr {
+    width: 100%;
+}
+
+
+
+/* Imágenes del carrito: tamaño fijo sin deformarse */
+#lista-carrito img {
+    width: 80px;
+    height: 80px;
+    object-fit: contain; /* mantiene proporción */
+    background: white;
+    padding: 4px;
+    border-radius: 6px;
+    display: block;
+}
+
+
+
+/* El total y botones quedan siempre visibles abajo */
+.carrito-total {
+    flex-shrink: 0;
+}
+
+.carrito-footer {
+    margin-top: 15px;
+    flex-shrink: 0;
+}
+
+.carrito-buttons {
+    display: flex;
+    gap: 8px;
+    flex-direction: column;
+}
+
+
+
+
+
+
+
 
 .carrito-total {
     text-align: center;
