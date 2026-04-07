@@ -955,10 +955,13 @@ const passwordPlano = Buffer.from(cliente.CONTRASENA, "base64").toString("utf-8"
 // Verificar si es temporal
 const esTemporal = passwordPlano.startsWith("TEMP_");
 
-     return res.json({
+   return res.json({
   ok: true,
-  tipo: "usuario",
-  usuario: identificador,
+  tipo: "cliente",
+  usuario: cliente.CORREO,   // para que la sesión use el correo real
+  id: cliente.ID,
+  email: cliente.CORREO,
+  nombre: cliente.NOMBRE,
   requiereCambioPassword: esTemporal
 });
     }
@@ -1619,4 +1622,53 @@ app.delete("/api/proveedores/:id", async (req, res) => {
 // ===========================================================================================================^ PROVEEDORES ^==================================================================================
 
 
+
+
+// ============================================================================================================= PEDIDOS ==================================================================================
+
+
+// -------------------------------------------------------------------------------------------------------------- GUARDAR PEDIDO ---------------------------------------------------------------
+app.post('/api/pedidos', async (req, res) => {
+    try {
+        const { id_cliente, fecha, estado, tipo_pago, descripcion, total } = req.body;
+
+        console.log('📦 [PEDIDOS] Datos recibidos:', req.body);
+
+        if (!id_cliente || !fecha || !total) {
+            return res.status(400).json({
+                mensaje: 'Faltan datos obligatorios para guardar el pedido'
+            });
+        }
+
+        const pool = await conectarDB();
+
+        const resultado = await pool.request()
+            .input('id_cliente', sql.Int, id_cliente)
+            .input('fecha', sql.Date, fecha)
+            .input('estado', sql.NVarChar(50), estado || 'procesando')
+            .input('tipo_pago', sql.NVarChar(50), tipo_pago || 'Contado')
+            .input('descripcion', sql.NVarChar(sql.MAX), descripcion || '')
+            .input('total', sql.Decimal(10, 2), total)
+            .query(`
+                INSERT INTO PEDIDOS (ID_CLIENTE, FECHA, ESTADO, TIPO_PAGO, DESCRIPCION, TOTAL)
+                VALUES (@id_cliente, @fecha, @estado, @tipo_pago, @descripcion, @total);
+
+                SELECT SCOPE_IDENTITY() AS id_pedido;
+            `);
+
+        res.status(201).json({
+            mensaje: 'Pedido guardado correctamente',
+            id_pedido: resultado.recordset[0].id_pedido
+        });
+
+    } catch (error) {
+        console.error('❌ [PEDIDOS] Error al guardar pedido:', error);
+        res.status(500).json({
+            mensaje: 'Error al guardar pedido',
+            error: error.message
+        });
+    }
+});
+
+// -------------------------------------------------------------------------------------------------------------- GUARDAR PEDIDO ---------------------------------------------------------------
 

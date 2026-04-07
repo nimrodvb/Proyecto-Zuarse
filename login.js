@@ -138,7 +138,11 @@ if (resultado.requiereCambioPassword) {
 }
 
 // ✔ Login normal
-crearSesion(resultado.usuario, resultado.tipo, recordar);
+crearSesion(resultado.usuario, resultado.tipo, recordar, {
+    id: resultado.id || null,
+    email: resultado.email || null,
+    nombre: resultado.nombre || null
+});;
 
     } catch (error) {
         // Muestra error en consola para depuración
@@ -149,12 +153,14 @@ crearSesion(resultado.usuario, resultado.tipo, recordar);
     }
 }
 
-function crearSesion(identificador, rol, recordar) {
+function crearSesion(identificador, rol, recordar, datosExtra = {}) {
     const sesion = {
         logueado: true,
         tipo: rol,
-        usuario: identificador, // Puede ser email o user
-        email: identificador.includes('@') ? identificador : null,
+        usuario: identificador,
+        email: datosExtra.email || (identificador.includes('@') ? identificador : null),
+        id: datosExtra.id || null,
+        nombre: datosExtra.nombre || null,
         fechaLogin: new Date().toISOString()
     };
 
@@ -166,7 +172,7 @@ function crearSesion(identificador, rol, recordar) {
 
     // Redirigir según rol
     setTimeout(() => {
-        if (rol === 'admin' || rol === 'cliente') {
+        if (rol === 'admin') {
             window.location.href = 'admin.html';
         } else {
             window.location.href = 'index.html';

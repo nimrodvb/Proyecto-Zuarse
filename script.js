@@ -371,7 +371,156 @@ function actualizarTotalCarrito() {
 }
 
 // ==================== FUNCIÓN DE COMPRA ====================
-function realizarCompra(e) {
+// function realizarCompra(e) {
+//     if (e) e.preventDefault();
+    
+//     console.log('🛒 [COMPRA] Iniciando proceso de compra...');
+    
+//     // Verificar sesión (buscar en localStorage y sessionStorage)
+//     let sesion = JSON.parse(localStorage.getItem('sesion_zuarse'));
+//     if (!sesion) {
+//         sesion = JSON.parse(sessionStorage.getItem('sesion_zuarse'));
+//     }
+//     console.log('📋 [COMPRA] Sesión:', sesion);
+    
+//     if (!sesion || !sesion.logueado) {
+//         console.error('❌ [COMPRA] Usuario no logueado');
+//         alert('⚠️ Por favor inicia sesión para realizar una compra');
+//         window.location.href = 'login.html';
+//         return;
+//     }
+    
+//     // Verificar que el carrito esté inicializado
+//     if (!lista) {
+//         console.error('❌ [COMPRA] Lista de carrito no inicializada');
+//         lista = document.querySelector('#lista-carrito tbody');
+//     }
+    
+//     if (!lista) {
+//         console.error('❌ [COMPRA] No se pudo encontrar el elemento #lista-carrito tbody');
+//         alert('Error técnico: No se pudo acceder al carrito');
+//         return;
+//     }
+    
+//     // Obtener filas del carrito
+//     const filas = lista.querySelectorAll('tr');
+//     console.log('📦 [COMPRA] Filas en el carrito:', filas.length);
+    
+//     if (filas.length === 0) {
+//         console.warn('⚠️ [COMPRA] Carrito vacío');
+//         alert('❌ Tu carrito está vacío. Agrega productos antes de confirmar el pedido.');
+//         return;
+//     }
+    
+//     // Construir items del pedido
+//     const items = [];
+//     let total = 0;
+    
+//     filas.forEach((fila, index) => {
+//     try {
+//         const celdas = fila.querySelectorAll('td');
+
+//         console.log('-------------------');
+//         console.log('Fila index:', index);
+//         console.log('HTML fila:', fila.innerHTML);
+//         console.log('Cantidad de celdas:', celdas.length);
+
+//         celdas.forEach((td, i) => {
+//             console.log(`Celda ${i}:`, td.textContent.trim());
+//         });
+
+//         if (celdas.length < 3) {
+//             console.warn(`⚠️ [COMPRA] Fila ${index} incompleta`);
+//             return;
+//         }
+
+//         const imagen = fila.querySelector('img') ? fila.querySelector('img').src : '';
+//         const nombre = celdas[1] ? celdas[1].textContent.trim() : 'Producto sin nombre';
+//         const precioText = celdas[2] ? celdas[2].textContent.trim() : '0';
+//         const precio = parseFloat(precioText.replace(/[^\d.]/g, '').trim());
+
+//         console.log('Nombre:', nombre);
+//         console.log('Precio texto:', precioText);
+//         console.log('Precio parseado:', precio);
+
+//         if (isNaN(precio)) {
+//             console.warn(`⚠️ [COMPRA] Precio inválido: ${precioText}`);
+//             return;
+//         }
+
+//         items.push({
+//             nombre: nombre,
+//             precio: precio,
+//             imagen: imagen
+//         });
+
+//         total += precio;
+//     } catch (error) {
+//         console.error(`❌ [COMPRA] Error procesando fila ${index}:`, error);
+//     }
+// });
+    
+//     console.log('DEBUG: Final items array constructed in realizarCompra:', items);
+
+//     console.log('✅ [COMPRA] Items procesados:', items.length, 'Total:', total);
+    
+//     if (items.length === 0) {
+//         console.error('❌ [COMPRA] No se procesaron items');
+//         alert('Error: No se pudieron procesar los productos del carrito');
+//         return;
+//     }
+    
+//     // Mostrar pasarela de pago antes de procesar
+//     mostrarPasarelaPago(total, function() {
+//         // Crear pedido (ahora con estado 'pagado' ya que fue pagado con éxito)
+//         const idPedido = generarIdPedido();
+//         const pedido = {
+//             id: idPedido,
+//             cliente_email: sesion.email || sesion.usuario,
+//             cliente_nombre: sesion.email ? sesion.email.split('@')[0] : sesion.usuario,
+//             items: items,
+//             total: parseFloat(total.toFixed(2)),
+//             fecha: new Date().toISOString(),
+//             estado: 'procesando',
+//             estado_pago: 'PAGADO',
+//             tipo_pago: 'Contado'
+//         };
+//         const descripcion = items
+//     .map(item => `${item.nombre} - ₡${item.precio.toFixed(2)}`)
+//     .join(' | ');
+        
+//         console.log('DEBUG: Pedido object created before saving and PDF generation (script.js):', pedido);
+
+//         console.log('📝 [COMPRA] Pedido creado:', pedido);
+        
+//         try {
+//             // Guardar pedido en localStorage
+//             const pedidos = JSON.parse(localStorage.getItem('pedidos')) || [];
+//             pedidos.push(pedido);
+//             localStorage.setItem('pedidos', JSON.stringify(pedidos));
+//             console.log('💾 [COMPRA] Pedido guardado en localStorage. Total de pedidos:', pedidos.length);
+//         } catch (error) {
+//             console.error('❌ [COMPRA] Error guardando pedido:', error);
+//             alert('Error al guardar el pedido. Intenta de nuevo.');
+//             return;
+//         }
+        
+//         // Mostrar confirmación
+//         mostrarConfirmacionCompra(pedido);
+        
+//         // Enviar email (sin bloquear)
+//         enviarEmailPedido(pedido);
+        
+//         // Limpiar carrito
+//         vaciarCarrito();
+        
+//         console.log('✨ [COMPRA] Proceso completado exitosamente');
+//     });
+// }
+
+
+// ==================== FUNCIÓN DE COMPRA ====================
+async function realizarCompra(e) {
     if (e) e.preventDefault();
     
     console.log('🛒 [COMPRA] Iniciando proceso de compra...');
@@ -389,6 +538,12 @@ function realizarCompra(e) {
         window.location.href = 'login.html';
         return;
     }
+    
+    if (sesion.tipo !== 'cliente') {
+    console.error('❌ [COMPRA] La sesión actual no es de cliente');
+    alert('⚠️ Solo los clientes pueden realizar compras');
+    return;
+}
     
     // Verificar que el carrito esté inicializado
     if (!lista) {
@@ -417,51 +572,50 @@ function realizarCompra(e) {
     let total = 0;
     
     filas.forEach((fila, index) => {
-    try {
-        const celdas = fila.querySelectorAll('td');
+        try {
+            const celdas = fila.querySelectorAll('td');
 
-        console.log('-------------------');
-        console.log('Fila index:', index);
-        console.log('HTML fila:', fila.innerHTML);
-        console.log('Cantidad de celdas:', celdas.length);
+            console.log('-------------------');
+            console.log('Fila index:', index);
+            console.log('HTML fila:', fila.innerHTML);
+            console.log('Cantidad de celdas:', celdas.length);
 
-        celdas.forEach((td, i) => {
-            console.log(`Celda ${i}:`, td.textContent.trim());
-        });
+            celdas.forEach((td, i) => {
+                console.log(`Celda ${i}:`, td.textContent.trim());
+            });
 
-        if (celdas.length < 3) {
-            console.warn(`⚠️ [COMPRA] Fila ${index} incompleta`);
-            return;
+            if (celdas.length < 3) {
+                console.warn(`⚠️ [COMPRA] Fila ${index} incompleta`);
+                return;
+            }
+
+            const imagen = fila.querySelector('img') ? fila.querySelector('img').src : '';
+            const nombre = celdas[1] ? celdas[1].textContent.trim() : 'Producto sin nombre';
+            const precioText = celdas[2] ? celdas[2].textContent.trim() : '0';
+            const precio = parseFloat(precioText.replace(/[^\d.]/g, '').trim());
+
+            console.log('Nombre:', nombre);
+            console.log('Precio texto:', precioText);
+            console.log('Precio parseado:', precio);
+
+            if (isNaN(precio)) {
+                console.warn(`⚠️ [COMPRA] Precio inválido: ${precioText}`);
+                return;
+            }
+
+            items.push({
+                nombre: nombre,
+                precio: precio,
+                imagen: imagen
+            });
+
+            total += precio;
+        } catch (error) {
+            console.error(`❌ [COMPRA] Error procesando fila ${index}:`, error);
         }
-
-        const imagen = fila.querySelector('img') ? fila.querySelector('img').src : '';
-        const nombre = celdas[1] ? celdas[1].textContent.trim() : 'Producto sin nombre';
-        const precioText = celdas[2] ? celdas[2].textContent.trim() : '0';
-        const precio = parseFloat(precioText.replace(/[^\d.]/g, '').trim());
-
-        console.log('Nombre:', nombre);
-        console.log('Precio texto:', precioText);
-        console.log('Precio parseado:', precio);
-
-        if (isNaN(precio)) {
-            console.warn(`⚠️ [COMPRA] Precio inválido: ${precioText}`);
-            return;
-        }
-
-        items.push({
-            nombre: nombre,
-            precio: precio,
-            imagen: imagen
-        });
-
-        total += precio;
-    } catch (error) {
-        console.error(`❌ [COMPRA] Error procesando fila ${index}:`, error);
-    }
-});
+    });
     
     console.log('DEBUG: Final items array constructed in realizarCompra:', items);
-
     console.log('✅ [COMPRA] Items procesados:', items.length, 'Total:', total);
     
     if (items.length === 0) {
@@ -470,9 +624,14 @@ function realizarCompra(e) {
         return;
     }
     
+    // Construir descripción para guardar en PEDIDOS.DESCRIPCION
+    const descripcion = items
+        .map(item => `${item.nombre} - ₡${item.precio.toFixed(2)}`)
+        .join(' | ');
+    
     // Mostrar pasarela de pago antes de procesar
-    mostrarPasarelaPago(total, function() {
-        // Crear pedido (ahora con estado 'pagado' ya que fue pagado con éxito)
+    mostrarPasarelaPago(total, async function() {
+        // Crear pedido local para usarlo en confirmación/email
         const idPedido = generarIdPedido();
         const pedido = {
             id: idPedido,
@@ -483,22 +642,42 @@ function realizarCompra(e) {
             fecha: new Date().toISOString(),
             estado: 'procesando',
             estado_pago: 'PAGADO',
-            tipo_pago: 'Contado'
+            tipo_pago: 'Contado',
+            descripcion: descripcion
         };
         
         console.log('DEBUG: Pedido object created before saving and PDF generation (script.js):', pedido);
-
         console.log('📝 [COMPRA] Pedido creado:', pedido);
         
         try {
-            // Guardar pedido en localStorage
-            const pedidos = JSON.parse(localStorage.getItem('pedidos')) || [];
-            pedidos.push(pedido);
-            localStorage.setItem('pedidos', JSON.stringify(pedidos));
-            console.log('💾 [COMPRA] Pedido guardado en localStorage. Total de pedidos:', pedidos.length);
+            const respuesta = await fetch('http://localhost:3000/api/pedidos', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    id_cliente: sesion.id,
+                    fecha: new Date().toISOString().split('T')[0],
+                    estado: 'procesando',
+                    tipo_pago: 'Contado',
+                    descripcion: descripcion,
+                    total: parseFloat(total.toFixed(2))
+                })
+            });
+
+            const data = await respuesta.json();
+
+            if (!respuesta.ok) {
+                console.error('❌ [COMPRA] Error respuesta servidor:', data);
+                alert(data.mensaje || 'Error al guardar el pedido en la base de datos');
+                return;
+            }
+
+            console.log('✅ [COMPRA] Pedido guardado en BD:', data);
+
         } catch (error) {
-            console.error('❌ [COMPRA] Error guardando pedido:', error);
-            alert('Error al guardar el pedido. Intenta de nuevo.');
+            console.error('❌ [COMPRA] Error guardando pedido en BD:', error);
+            alert('Error al guardar el pedido en la base de datos');
             return;
         }
         
@@ -514,6 +693,9 @@ function realizarCompra(e) {
         console.log('✨ [COMPRA] Proceso completado exitosamente');
     });
 }
+
+
+
 
 function mostrarConfirmacionCompra(pedido) {
     const itemsResumen = pedido.items.map(item => `  • ${item.nombre}: $${item.precio.toFixed(2)}`).join('\n');
