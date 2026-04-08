@@ -870,3 +870,30 @@ tbody tr:hover {
     border-bottom: 1px solid #f5f5f5;
     font-size: 14px;
 }
+
+.btn-descargar-pdf {
+    background-color: #6c757d; /* gris elegante */
+}
+
+.btn-enviar-email {
+    background-color: #007bff; /* azul */
+}
+
+.modal-footer {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap; /* 👈 importante */
+}
+
+/* TODOS IGUALES */
+.modal-footer button {
+    flex: 1;
+    min-width: 160px;
+}
+
+/* SELECT tamaño controlado */
+.modal-footer select {
+    flex: 1;
+    min-width: 180px;
+}

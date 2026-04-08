@@ -60,7 +60,8 @@ const transporter = nodemailer.createTransport({
 // Habilita CORS (Cross-Origin Resource Sharing) para todas las rutas. Esto es crucial para permitir que tu página web (ej. index.html) haga peticiones a este servidor.
 app.use(cors());
 // Habilita el middleware de Express para que pueda interpretar y procesar cuerpos de petición en formato JSON. Esencial para las APIs que reciben datos.
-app.use(express.json());
+app.use(express.json({ limit: '20mb' }));
+app.use(express.urlencoded({ limit: '20mb', extended: true }));
 // Sirve los archivos estáticos (HTML, CSS, JS, imágenes) que se encuentren en el directorio raíz del proyecto (__dirname).
 // Esto permite que al acceder a http://localhost:3000/ se cargue index.html, style.css, etc.
 app.use(express.static(__dirname));
@@ -1681,6 +1682,7 @@ app.get('/api/pedidos', async (req, res) => {
             SELECT 
                 P.ID,
                 C.NOMBRE AS CLIENTE,
+                C.CORREO,
                 P.FECHA,
                 P.TOTAL,
                 P.TIPO_PAGO,
@@ -1780,3 +1782,48 @@ app.put('/api/pedidos/:id/estado', async (req, res) => {
 });
 
 // -------------------------------------------------------------------------------------------------------------- ACTUALIZAR PEDIDO -----------------------------------------
+
+
+
+// -------------------------------------------------------------------------------------------------------------- ENVIAR PEDIDO POR EMAIL -----------------------------------------
+
+app.post('/api/pedidos/enviar-pdf', async (req, res) => {
+    try {
+        const { to, subject, html, pdfBase64, fileName } = req.body;
+
+        if (!to || !pdfBase64) {
+            return res.status(400).json({
+                ok: false,
+                mensaje: 'Faltan datos para enviar el correo'
+            });
+        }
+
+        await transporter.sendMail({
+            from: process.env.EMAIL_USER,
+            to,
+            subject: subject || 'Comprobante de Pedido - ZUARSE',
+            html: html || '<p>Adjunto encontrarás el comprobante de tu pedido.</p>',
+            attachments: [
+                {
+                    filename: fileName || 'pedido.pdf',
+                    content: pdfBase64,
+                    encoding: 'base64'
+                }
+            ]
+        });
+
+        res.json({
+            ok: true,
+            mensaje: 'Correo enviado correctamente'
+        });
+
+    } catch (error) {
+        console.error('❌ Error enviando PDF por email:', error);
+        res.status(500).json({
+            ok: false,
+            mensaje: 'Error al enviar el correo'
+        });
+    }
+});
+
+// -------------------------------------------------------------------------------------------------------------- ENVIAR PEDIDO POR EMAIL -----------------------------------------

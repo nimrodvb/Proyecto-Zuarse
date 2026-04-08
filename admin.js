@@ -10,6 +10,8 @@ let proveedorEditando = null;
 let compraEditando = null;
 let empleadoEditando = null;
 let pedidoActualId = null;
+let pedidoActualData = null;
+
 
 
 // FUNCIONES DE SESIÓN
@@ -40,6 +42,16 @@ document.addEventListener('DOMContentLoaded', function() {
     const btnX = document.querySelector('.close-modal');
     const btnCerrar = document.getElementById('btn-cerrar-modal');
     const btnGuardarEstado = document.getElementById('btn-guardar-estado');
+    const btnDescargarPDF = document.getElementById('btn-descargar-pdf');
+    const btnEnviarEmail = document.getElementById('btn-enviar-email');
+
+if (btnEnviarEmail) {
+    btnEnviarEmail.addEventListener('click', enviarPedidoPorEmail);
+}
+
+if (btnDescargarPDF) {
+    btnDescargarPDF.addEventListener('click', descargarPedidoPDF);
+}
 
     if (btnX) btnX.addEventListener('click', cerrarModalPedido);
     if (btnCerrar) btnCerrar.addEventListener('click', cerrarModalPedido);
@@ -1608,8 +1620,8 @@ async function cargarPedidos() {
                     </span>
                 </td>
                 <td>
-                    <button onclick="verPedido(${pedido.ID}, \`${pedido.CLIENTE}\`, \`${pedido.FECHA}\`, ${pedido.TOTAL}, \`${pedido.TIPO_PAGO}\`, \`${pedido.ESTADO}\`, \`${pedido.DESCRIPCION}\`)" class="btn-ver">Ver</button>
-                    <button onclick="eliminarPedido(${pedido.ID})" class="btn-eliminar">Eliminar</button>
+                <button onclick="verPedido(${pedido.ID}, \`${pedido.CLIENTE}\`, \`${pedido.FECHA}\`, ${pedido.TOTAL}, \`${pedido.TIPO_PAGO}\`, \`${pedido.ESTADO}\`, \`${pedido.DESCRIPCION}\`, \`${pedido.CORREO}\`)" class="btn-ver">Ver</button> 
+                <button onclick="eliminarPedido(${pedido.ID})" class="btn-eliminar">Eliminar</button>
                 </td>
             `;
 
@@ -1623,8 +1635,18 @@ async function cargarPedidos() {
 
 
 
-function verPedido(id, cliente, fecha, total, tipoPago, estado, descripcion) {
+function verPedido(id, cliente, fecha, total, tipoPago, estado, descripcion, correo) {
     pedidoActualId = id;
+    pedidoActualData = {
+    id,
+    cliente,
+    fecha,
+    total,
+    tipoPago,
+    estado,
+    descripcion,
+    correo
+};
     const modal = document.getElementById('modal-pedido');
     const contenido = document.getElementById('detalles-pedido-content');
     const selectEstado = document.getElementById('nuevo-estado');
@@ -1655,10 +1677,8 @@ function verPedido(id, cliente, fecha, total, tipoPago, estado, descripcion) {
 }
 
 
-// function cerrarModalPedido() {
-//     document.getElementById('modal-pedido').style.display = 'none';
-//     pedidoVisualizando = null;
-// }
+
+
 
 function cerrarModalPedido() {
     document.getElementById('modal-pedido').style.display = 'none';
@@ -1737,30 +1757,36 @@ async function eliminarPedido(id) {
 }
 
 // ====================================================================================================== PDF Y EMAIL ====================================================================
-function descargarPedidoPDF(pedidoId) {
-    const pedidos = JSON.parse(localStorage.getItem('pedidos')) || [];
-    const pedido = pedidos.find(p => p.id === pedidoId);
-    
-    if (!pedido) {
-        alert('Pedido no encontrado');
+function descargarPedidoPDF() {
+    if (!pedidoActualData) {
+        alert('No hay ningún pedido seleccionado');
         return;
     }
-    
-    generarPDF(pedido);
+
+    generarPDF(pedidoActualData);
 }
+
 
 function generarPDF(pedido) {
     const element = document.createElement('div');
     element.style.padding = '20px';
     element.style.fontFamily = 'Arial, sans-serif';
     element.style.backgroundColor = '#fff';
+    element.style.color = '#333';
     
     let itemsHTML = '';
-    pedido.items.forEach(item => {
+
+    const items = pedido.descripcion.split('|').map(item => item.trim());
+
+    items.forEach(item => {
+        const partes = item.split(' - ');
+        const nombre = partes[0] || item;
+        const precioTexto = partes[1] || '$0.00';
+
         itemsHTML += `
-            <tr>
-                <td style="padding: 8px; border-bottom: 1px solid #ddd;">${item.nombre}</td>
-                <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">$${item.precio.toFixed(2)}</td>
+            <tr style="color: #333;">
+                <td style="padding: 8px; border-bottom: 1px solid #ddd;">${nombre}</td>
+                <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">${precioTexto}</td>
             </tr>
         `;
     });
@@ -1774,15 +1800,14 @@ function generarPDF(pedido) {
         <h2 style="color: #333; border-bottom: 3px solid #667eea; padding-bottom: 10px;">Comprobante de Pedido</h2>
         
         <div style="margin: 20px 0; padding: 15px; background: #f9f9f9; border-radius: 5px;">
-            <p><strong>ID Pedido:</strong> ${pedido.id}</p>
+            <p><strong>ID Pedido:</strong> PED-${pedido.id}</p>
             <p><strong>Fecha:</strong> ${new Date(pedido.fecha).toLocaleDateString('es-ES')} ${new Date(pedido.fecha).toLocaleTimeString('es-ES')}</p>
             <p><strong>Estado:</strong> ${(pedido.estado || 'pendiente').charAt(0).toUpperCase() + (pedido.estado || 'pendiente').slice(1)}</p>
-            <p><strong>Tipo de Pago:</strong> ${pedido.tipo_pago || 'No especificado'}</p>
+            <p><strong>Tipo de Pago:</strong> ${pedido.tipoPago || pedido.tipo_pago || 'No especificado'}</p>
         </div>
         
         <h3 style="color: #333; margin-top: 25px;">Información del Cliente</h3>
-        <p><strong>Nombre:</strong> ${pedido.cliente_nombre}</p>
-        <p><strong>Email:</strong> ${pedido.cliente_email}</p>
+        <p><strong>Nombre:</strong> ${pedido.cliente || pedido.cliente_nombre || 'Cliente'}</p>
         
         <h3 style="color: #333; margin-top: 25px;">Detalles de la Compra</h3>
         <table style="width: 100%; border-collapse: collapse;">
@@ -1798,7 +1823,7 @@ function generarPDF(pedido) {
         </table>
         
         <div style="margin-top: 20px; padding: 15px; background: #e8eaf6; border-radius: 5px;">
-            <h3 style="margin: 0; color: #667eea;">Total: $${pedido.total.toFixed(2)}</h3>
+            <h3 style="margin: 0; color: #667eea;">Total: $${parseFloat(pedido.total).toFixed(2)}</h3>
         </div>
         
         <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #666; font-size: 12px;">
@@ -1818,46 +1843,130 @@ function generarPDF(pedido) {
     html2pdf().set(options).from(element).save();
 }
 
-function enviarPedidoPorEmail(pedidoId) {
-    const pedidos = JSON.parse(localStorage.getItem('pedidos')) || [];
-    const pedido = pedidos.find(p => p.id === pedidoId);
-    
-    if (!pedido) {
-        alert('Pedido no encontrado');
+
+
+async function enviarPedidoPorEmail() {
+    if (!pedidoActualData) {
+        alert('No hay pedido seleccionado');
         return;
     }
-    
-    // Validar que EmailJS esté configurado
-    if (typeof validarConfiguracionEmailJS === 'undefined' || !validarConfiguracionEmailJS()) {
-        alert('⚠️ EmailJS no está configurado correctamente.\n\nPara usar esta función:\n1. Regístrate en https://www.emailjs.com\n2. Actualiza tu PUBLIC_KEY en config.js\n3. Crea un servicio y plantilla de email\n\nMientras tanto, puedes descargar el PDF del pedido.');
-        return;
-    }
-    
-    // Construir el contenido del email
-    let itemsText = '';
-    pedido.items.forEach(item => {
-        itemsText += `- ${item.nombre}: $${item.precio.toFixed(2)}\n`;
-    });
-    
-    const templateParams = {
-        to_email: pedido.cliente_email,
-        to_name: pedido.cliente_nombre,
-        order_id: pedido.id,
-        order_date: new Date(pedido.fecha).toLocaleDateString('es-ES'),
-        order_items: itemsText,
-        order_total: pedido.total.toFixed(2),
-        order_status: (pedido.estado || 'pendiente').charAt(0).toUpperCase() + (pedido.estado || 'pendiente').slice(1)
-    };
-    
-    emailjs.send(EMAILJS_CONFIG.SERVICE_ID, EMAILJS_CONFIG.TEMPLATE_ID, templateParams)
-        .then(function(response) {
-            alert('✅ Email enviado correctamente a ' + pedido.cliente_email + '!');
-        })
-        .catch(function(error) {
-            alert('❌ Error al enviar el email. Por favor, intenta de nuevo.\n\nNota: Asegúrate de configurar EmailJS en config.js');
-            console.error('Error:', error);
+
+    try {
+        // Crear HTML igual que el PDF
+        const element = document.createElement('div');
+        element.style.padding = '20px';
+        element.style.fontFamily = 'Arial, sans-serif';
+        element.style.backgroundColor = '#fff';
+        element.style.color = '#333';
+
+        const items = pedidoActualData.descripcion.split('|').map(item => item.trim());
+
+        let itemsHTML = '';
+        items.forEach(item => {
+            const partes = item.split(' - ');
+            const nombre = partes[0] || item;
+            const precioTexto = partes[1] || '$0.00';
+
+            itemsHTML += `
+                <tr>
+                    <td style="padding: 8px; border-bottom: 1px solid #ddd;">${nombre}</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">${precioTexto}</td>
+                </tr>
+            `;
         });
+
+        element.innerHTML = `
+            <div style="text-align: center; margin-bottom: 30px;">
+                <h1 style="color: #667eea; margin: 0;">ZUARSE</h1>
+                <p style="color: #666; margin: 5px 0;">Tienda Online</p>
+            </div>
+            
+            <h2 style="color: #333; border-bottom: 3px solid #667eea; padding-bottom: 10px;">Comprobante de Pedido</h2>
+            
+            <div style="margin: 20px 0; padding: 15px; background: #f9f9f9; border-radius: 5px;">
+                <p><strong>ID Pedido:</strong> PED-${pedidoActualData.id}</p>
+                <p><strong>Fecha:</strong> ${new Date(pedidoActualData.fecha).toLocaleString('es-ES')}</p>
+                <p><strong>Estado:</strong> ${pedidoActualData.estado}</p>
+                <p><strong>Tipo de Pago:</strong> ${pedidoActualData.tipoPago}</p>
+            </div>
+            
+            <h3>Información del Cliente</h3>
+            <p><strong>Nombre:</strong> ${pedidoActualData.cliente}</p>
+            
+            <h3>Detalles de la Compra</h3>
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: #667eea; color: white;">
+                        <th style="padding: 12px; text-align: left;">Producto</th>
+                        <th style="padding: 12px; text-align: right;">Precio</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${itemsHTML}
+                </tbody>
+            </table>
+            
+            <div style="margin-top: 20px; padding: 15px; background: #e8eaf6; border-radius: 5px;">
+                <h3>Total: $${parseFloat(pedidoActualData.total).toFixed(2)}</h3>
+            </div>
+        `;
+
+        // Convertir a PDF en base64
+        const opt = {
+            margin: 10,
+            filename: `pedido-${pedidoActualData.id}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2 },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        const pdfBlob = await html2pdf().set(opt).from(element).outputPdf('blob');
+
+        const reader = new FileReader();
+
+        reader.readAsDataURL(pdfBlob);
+
+        reader.onloadend = async function () {
+            const base64data = reader.result.split(',')[1];
+
+            const emailDestino = pedidoActualData.correo;
+
+if (!emailDestino) {
+    alert('El cliente no tiene correo registrado');
+    return;
 }
+
+            const respuesta = await fetch('http://localhost:3000/api/pedidos/enviar-pdf', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    to: emailDestino,
+                    subject: `Pedido PED-${pedidoActualData.id}`,
+                    html: `<p>Adjunto encontrarás tu comprobante de pedido.</p>`,
+                    pdfBase64: base64data,
+                    fileName: `pedido-${pedidoActualData.id}.pdf`
+                })
+            });
+
+            const data = await respuesta.json();
+
+            if (!respuesta.ok) {
+                alert(data.mensaje || 'Error al enviar el correo');
+                return;
+            }
+
+            alert('📧 Correo enviado correctamente');
+        };
+
+    } catch (error) {
+        console.error('❌ Error enviando email:', error);
+        alert('Error al enviar el correo');
+    }
+}
+
+
 
 // ==================================================================================================== DASHBOARD & MÉTRICAS =============================================================
 function cargarDashboard() {
