@@ -775,7 +775,7 @@ app.put("/api/productos/:id", async (req, res) => {
     const id = parseInt(req.params.id);
     const { nombre, descripcion, precio, imagen, stock, categoriaId } = req.body;
 
-    if (!id || isNaN(id)) {
+    if (id === null || id === undefined || id === '' || isNaN(id)) {
       return res.status(400).json({
         ok: false,
         mensaje: "ID de producto no válido"
