@@ -152,6 +152,12 @@ function configurarEventos() {
     if (btnNuevoEmpleado) btnNuevoEmpleado.addEventListener('click', mostrarFormEmpleado);
     if (cancelarEmpleado) cancelarEmpleado.addEventListener('click', ocultarFormEmpleado);
     if (formularioEmpleado) formularioEmpleado.addEventListener('submit', guardarEmpleado);
+
+    const filtroInventarioCategoria = document.getElementById('filtro-inventario-categoria');
+
+if (filtroInventarioCategoria) {
+    filtroInventarioCategoria.addEventListener('change', cargarInventario);
+}
 }
 
 // ==================== NAVEGACIÓN DE TABS ====================
@@ -463,61 +469,62 @@ async function eliminarProducto(id) {
  * Permite filtrar por categoría y ordena los productos por la cantidad de stock más baja primero.
  */
 
-/**
- * Carga y muestra los productos en la tabla de inventario.
- * Lee los productos del localStorage, aplica el filtro de categoría seleccionado,
- * ordena los productos por stock ascendente (de menor a mayor) y los renderiza en la tabla.
- * Aplica estilos especiales para productos con stock bajo o agotado.
- */
-function cargarInventario() {
-    const productos = JSON.parse(localStorage.getItem('productos')) || [];
-    const tbody = document.getElementById('tbody-inventario');
+
+const filtroCat = document.getElementById('filtro-inventario-categoria');
+
+async function cargarInventario() {
+    const tbodyInventario = document.getElementById('tbody-inventario');
     const sinInventario = document.getElementById('sin-inventario');
-    const filtroCat = document.getElementById('filtro-inventario-categoria');
-    const categoriaSeleccionada = filtroCat ? filtroCat.value : '';
+    const filtroCategoria = document.getElementById('filtro-inventario-categoria');
 
-    if (!tbody) return;
+    try {
+        const categoriaSeleccionada = filtroCategoria ? filtroCategoria.value : '';
 
-    tbody.innerHTML = '';
+        let url = 'http://localhost:3000/api/inventario';
 
-    // Filtrar por categoría si hay una seleccionada
-    let productosFiltrados = productos;
-    if (categoriaSeleccionada) {
-        productosFiltrados = productos.filter(p => p.categoria === categoriaSeleccionada);
-    }
+        if (categoriaSeleccionada) {
+            url += `?categoria=${categoriaSeleccionada}`;
+        }
 
-    if (productosFiltrados.length === 0) {
-        if (sinInventario) {
+        const respuesta = await fetch(url);
+        const data = await respuesta.json();
+
+        if (!data.ok) {
+            tbodyInventario.innerHTML = `
+                <tr>
+                    <td colspan="3">Error al cargar inventario.</td>
+                </tr>
+            `;
+            sinInventario.style.display = 'none';
+            return;
+        }
+
+        const inventario = data.inventario;
+
+        if (!inventario || inventario.length === 0) {
+            tbodyInventario.innerHTML = '';
             sinInventario.style.display = 'block';
-            sinInventario.textContent = productos.length === 0 ? 'No hay productos para mostrar en el inventario.' : 'No hay productos en esta categoría.';
+            return;
         }
-        return;
+
+        sinInventario.style.display = 'none';
+
+        tbodyInventario.innerHTML = inventario.map(p => `
+            <tr>
+                <td>${p.NOMBRE}</td>
+                <td>${p.CATEGORIA}</td>
+                <td style=" font-weight: bold;
+                color: ${p.STOCK <= 10 ? 'red' : p.STOCK <= 20 ? 'orange' : 'green'} ">
+                ${p.STOCK}
+                </td>
+            </tr>
+        `).join('');
+
+    } catch (error) {
+        console.error('Error al cargar inventario:', error);
     }
-
-    if (sinInventario) sinInventario.style.display = 'none';
-
-    // Ordenar por stock más bajo primero para priorizar
-    productosFiltrados.sort((a, b) => (a.stock || 0) - (b.stock || 0));
-
-    productosFiltrados.forEach(producto => {
-        const row = document.createElement('tr');
-        const stock = producto.stock || 0;
-        
-        let stockClass = '';
-        if (stock === 0) {
-            stockClass = 'stock-agotado'; // Para estilizar en rojo
-        } else if (stock > 0 && stock <= 10) {
-            stockClass = 'stock-bajo'; // Para estilizar en naranja
-        }
-
-        row.innerHTML = `
-            <td>${escapeHtml(producto.nombre)}</td>
-            <td>${escapeHtml(producto.categoria) || 'General'}</td>
-            <td><span class="stock-badge ${stockClass}">${stock}</span></td>
-        `;
-        tbody.appendChild(row);
-    });
 }
+
 
 
 // ================================================================================================================ INVENTARIO ==============================================================
@@ -933,7 +940,7 @@ async function cargarCategorias() {
             } else {
                 filtroInventarioSelect.innerHTML =
                     '<option value="">Todas las categorías</option>' +
-                    categorias.map(c => `<option value="${escapeHtml(c.nombre)}">${escapeHtml(c.nombre)}</option>`).join('');
+                    categorias.map(c => `<option value="${c.id}">${escapeHtml(c.nombre)}</option>`).join('');
             }
 
             // Intenta conservar el valor seleccionado previamente

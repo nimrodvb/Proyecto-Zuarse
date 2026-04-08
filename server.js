@@ -1827,3 +1827,50 @@ app.post('/api/pedidos/enviar-pdf', async (req, res) => {
 });
 
 // -------------------------------------------------------------------------------------------------------------- ENVIAR PEDIDO POR EMAIL -----------------------------------------
+
+
+
+// =========================================================================================================== INVENTARIO =========================================================
+
+app.get('/api/inventario', async (req, res) => {
+    try {
+        const pool = await conectarDB();
+
+        const { categoria } = req.query;
+
+        let query = `
+            SELECT 
+                P.ID,
+                P.NOMBRE,
+                P.STOCK,
+                C.NOMBRE AS CATEGORIA
+            FROM PRODUCTOS P
+            INNER JOIN CATEGORIAS C ON P.ID_CATEGORIA = C.ID
+        `;
+
+        const request = pool.request();
+
+        // filtro por categoría (opcional)
+        if (categoria && categoria !== 'todas') {
+            query += ` WHERE C.ID = @categoria `;
+            request.input('categoria', sql.Int, categoria);
+        }
+
+        // ORDEN: menor stock primero 🔥
+        query += ` ORDER BY P.STOCK ASC `;
+
+        const result = await request.query(query);
+
+        res.json({
+            ok: true,
+            inventario: result.recordset
+        });
+
+    } catch (error) {
+        console.error('Error inventario:', error);
+        res.status(500).json({
+            ok: false,
+            mensaje: 'Error al obtener inventario'
+        });
+    }
+});
