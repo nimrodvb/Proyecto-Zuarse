@@ -1672,3 +1672,111 @@ app.post('/api/pedidos', async (req, res) => {
 
 // -------------------------------------------------------------------------------------------------------------- GUARDAR PEDIDO ---------------------------------------------------------------
 
+// -------------------------------------------------------------------------------------------------------------- OBTENER PEDIDOS ------------------------------------------
+app.get('/api/pedidos', async (req, res) => {
+    try {
+        const pool = await conectarDB();
+
+        const resultado = await pool.request().query(`
+            SELECT 
+                P.ID,
+                C.NOMBRE AS CLIENTE,
+                P.FECHA,
+                P.TOTAL,
+                P.TIPO_PAGO,
+                P.ESTADO,
+                P.DESCRIPCION
+            FROM PEDIDOS P
+            INNER JOIN CLIENTES C ON P.ID_CLIENTE = C.ID
+            ORDER BY P.ID DESC
+        `);
+
+        res.json({
+            ok: true,
+            pedidos: resultado.recordset
+        });
+
+    } catch (error) {
+        console.error('❌ Error obteniendo pedidos:', error);
+        res.status(500).json({
+            ok: false,
+            mensaje: 'Error al obtener pedidos'
+        });
+    }
+});
+
+// -------------------------------------------------------------------------------------------------------------- OBTENER PEDIDOS ------------------------------------------
+
+// -------------------------------------------------------------------------------------------------------------- ELIMINAR PEDIDO -----------------------------------------
+
+app.delete('/api/pedidos/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const pool = await conectarDB();
+
+        await pool.request()
+            .input('id', sql.Int, id)
+            .query(`
+                DELETE FROM PEDIDOS
+                WHERE ID = @id
+            `);
+
+        res.json({
+            ok: true,
+            mensaje: 'Pedido eliminado correctamente'
+        });
+
+    } catch (error) {
+        console.error('❌ Error eliminando pedido:', error);
+        res.status(500).json({
+            ok: false,
+            mensaje: 'Error al eliminar pedido'
+        });
+    }
+});
+
+// -------------------------------------------------------------------------------------------------------------- ELIMINAR PEDIDO -----------------------------------------
+
+
+// -------------------------------------------------------------------------------------------------------------- ACTUALIZAR PEDIDO -----------------------------------------
+
+
+app.put('/api/pedidos/:id/estado', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { estado } = req.body;
+
+        if (!estado) {
+            return res.status(400).json({
+                ok: false,
+                mensaje: 'El estado es obligatorio'
+            });
+        }
+
+        const pool = await conectarDB();
+
+        await pool.request()
+            .input('id', sql.Int, id)
+            .input('estado', sql.NVarChar(50), estado)
+            .query(`
+                UPDATE PEDIDOS
+                SET ESTADO = @estado
+                WHERE ID = @id
+            `);
+
+        res.json({
+            ok: true,
+            mensaje: 'Estado actualizado correctamente'
+        });
+
+    } catch (error) {
+        console.error('❌ Error actualizando estado del pedido:', error);
+        res.status(500).json({
+            ok: false,
+            mensaje: 'Error al actualizar estado'
+        });
+    }
+});
+
+// -------------------------------------------------------------------------------------------------------------- ACTUALIZAR PEDIDO -----------------------------------------

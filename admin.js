@@ -9,6 +9,7 @@ let categoriasCargadas = [];
 let proveedorEditando = null;
 let compraEditando = null;
 let empleadoEditando = null;
+let pedidoActualId = null;
 
 
 // FUNCIONES DE SESIÓN
@@ -22,19 +23,27 @@ function cerrarSesionAdmin() {
 
 // INICIALIZACIÓN
 document.addEventListener('DOMContentLoaded', function() {
-    // Configurar eventos primero para asegurar que la navegación funcione
-    configurarEventos();
+    // Configurar eventos primero
+    try { configurarEventos(); } catch(e) { console.error('configurarEventos:', e); }
 
-    try { cargarProductos(); } catch(e) { console.error(e); }
-    try { cargarInventario(); } catch(e) { console.error(e); }
-    try { cargarClientes(); } catch(e) { console.error(e); }
-    try { cargarCategorias(); } catch(e) { console.error(e); }
-    try { cargarProveedores(); } catch(e) { console.error(e); }
-    try { cargarCompras(); } catch(e) { console.error(e); }
-    try { cargarPedidos(); } catch(e) { console.error(e); }
-    try { cargarNotificaciones(); } catch(e) { console.error(e); }
-    try { cargarDashboard(); } catch(e) { console.error(e); }
-    try { cargarEquipo(); } catch(e) { console.error(e); }
+    try { cargarProductos(); } catch(e) { console.error('cargarProductos:', e); }
+    try { cargarInventario(); } catch(e) { console.error('cargarInventario:', e); }
+    try { cargarClientes(); } catch(e) { console.error('cargarClientes:', e); }
+    try { cargarCategorias(); } catch(e) { console.error('cargarCategorias:', e); }
+    try { cargarProveedores(); } catch(e) { console.error('cargarProveedores:', e); }
+    try { cargarCompras(); } catch(e) { console.error('cargarCompras:', e); }
+    try { cargarPedidos(); } catch(e) { console.error('cargarPedidos:', e); }
+    try { cargarNotificaciones(); } catch(e) { console.error('cargarNotificaciones:', e); }
+    try { cargarDashboard(); } catch(e) { console.error('cargarDashboard:', e); }
+    try { cargarEquipo(); } catch(e) { console.error('cargarEquipo:', e); }
+
+    const btnX = document.querySelector('.close-modal');
+    const btnCerrar = document.getElementById('btn-cerrar-modal');
+    const btnGuardarEstado = document.getElementById('btn-guardar-estado');
+
+    if (btnX) btnX.addEventListener('click', cerrarModalPedido);
+    if (btnCerrar) btnCerrar.addEventListener('click', cerrarModalPedido);
+    if (btnGuardarEstado) btnGuardarEstado.addEventListener('click', actualizarEstadoPedido);
 });
 
 // ============================================================================================================ CONFIGURAR EVENTOS ========================================================
@@ -1552,158 +1561,179 @@ function agregarProductoACompra() {
 }
 
 // ======================================================================================================== PEDIDOS ======================================================================
-function cargarPedidos() {
-    const pedidos = JSON.parse(localStorage.getItem('pedidos')) || [];
-    const productos = JSON.parse(localStorage.getItem('productos')) || []; // Cargar productos para buscar categorías
-    const tbody = document.getElementById('tbody-pedidos');
-    const sinPedidos = document.getElementById('sin-pedidos');
-    const filtroEstadoEl = document.getElementById('filtro-estado');
-    const filtroProductoEl = document.getElementById('filtro-pedido-producto');
-    const filtroCategoriaEl = document.getElementById('filtro-pedido-categoria');
 
-    const filtroEstado = filtroEstadoEl ? filtroEstadoEl.value : '';
-    const filtroProducto = filtroProductoEl ? filtroProductoEl.value.toLowerCase() : '';
-    const filtroCategoria = filtroCategoriaEl ? filtroCategoriaEl.value.toLowerCase() : '';
 
-    if (!tbody) return;
-    tbody.innerHTML = '';
-    
-    // Filtrado combinado
-    let pedidosFiltrados = pedidos.filter(p => {
-        // 1. Filtro por Estado
-        if (filtroEstado && (p.estado || 'pendiente') !== filtroEstado) return false;
 
-        // 2. Filtro por Nombre de Producto (busca dentro de los items del pedido)
-        if (filtroProducto) {
-            const tieneProducto = p.items.some(item => item.nombre.toLowerCase().includes(filtroProducto));
-            if (!tieneProducto) return false;
+async function cargarPedidos() {
+    try {
+        const respuesta = await fetch('http://localhost:3000/api/pedidos');
+        const data = await respuesta.json();
+
+        const tbody = document.getElementById('tbody-pedidos');
+        const sinPedidos = document.getElementById('sin-pedidos');
+        const filtroEstado = document.getElementById('filtro-estado');
+        const estadoSeleccionado = filtroEstado ? filtroEstado.value : '';
+
+        tbody.innerHTML = '';
+
+        if (!data.ok || data.pedidos.length === 0) {
+            sinPedidos.style.display = 'block';
+            return;
         }
 
-        // 3. Filtro por Categoría (cruza información con la lista de productos)
-        if (filtroCategoria) {
-            const tieneCategoria = p.items.some(item => {
-                const prod = productos.find(pr => pr.nombre === item.nombre);
-                return prod && prod.categoria && prod.categoria.toLowerCase().includes(filtroCategoria);
-            });
-            if (!tieneCategoria) return false;
+        const pedidosFiltrados = data.pedidos.filter(pedido => {
+            if (!estadoSeleccionado) return true;
+            return pedido.ESTADO.toLowerCase() === estadoSeleccionado.toLowerCase();
+        });
+
+        if (pedidosFiltrados.length === 0) {
+            sinPedidos.style.display = 'block';
+            return;
         }
 
-        return true;
-    });
-    
-    if (pedidosFiltrados.length === 0) {
-        sinPedidos.style.display = 'block';
-        return;
+        sinPedidos.style.display = 'none';
+
+        pedidosFiltrados.forEach(pedido => {
+            const fila = document.createElement('tr');
+
+            fila.innerHTML = `
+                <td>PED-${pedido.ID}</td>
+                <td>${pedido.CLIENTE}</td>
+                <td>${new Date(pedido.FECHA).toLocaleDateString()}</td>
+                <td>$${parseFloat(pedido.TOTAL).toFixed(2)}</td>
+                <td>${pedido.TIPO_PAGO}</td>
+                <td>
+                    <span class="estado-badge ${pedido.ESTADO.toLowerCase()}">
+                        ${pedido.ESTADO.toUpperCase()}
+                    </span>
+                </td>
+                <td>
+                    <button onclick="verPedido(${pedido.ID}, \`${pedido.CLIENTE}\`, \`${pedido.FECHA}\`, ${pedido.TOTAL}, \`${pedido.TIPO_PAGO}\`, \`${pedido.ESTADO}\`, \`${pedido.DESCRIPCION}\`)" class="btn-ver">Ver</button>
+                    <button onclick="eliminarPedido(${pedido.ID})" class="btn-eliminar">Eliminar</button>
+                </td>
+            `;
+
+            tbody.appendChild(fila);
+        });
+
+    } catch (error) {
+        console.error('❌ Error cargando pedidos:', error);
     }
-    
-    sinPedidos.style.display = 'none';
-    
-    // Mostrar pedidos en orden inverso (más recientes primero)
-    pedidosFiltrados.reverse().forEach(pedido => {
-        const fila = document.createElement('tr');
-        const fecha = new Date(pedido.fecha).toLocaleDateString('es-ES');
-        const estado = pedido.estado || 'pendiente';
-        
-        fila.innerHTML = `
-            <td>${pedido.id}</td>
-            <td>${pedido.cliente_nombre}</td>
-            <td>${fecha}</td>
-            <td>$${(pedido.total || 0).toFixed(2)}</td>
-            <td>${pedido.tipo_pago || 'N/A'}</td>
-            <td>
-                <span class="badge badge-${estado}">${estado.charAt(0).toUpperCase() + estado.slice(1)}</span>
-            </td>
-            <td>
-                <button class="btn-ver" onclick="verDetallesPedido('${pedido.id}')">Ver</button>
-                <button class="btn-eliminar" onclick="eliminarPedido('${pedido.id}')">Eliminar</button>
-            </td>
-        `;
-        tbody.appendChild(fila);
-    });
 }
 
-function verDetallesPedido(pedidoId) {
-    const pedidos = JSON.parse(localStorage.getItem('pedidos')) || [];
-    const pedido = pedidos.find(p => p.id === pedidoId);
-    
-    if (!pedido) {
-        alert('Pedido no encontrado');
-        return;
-    }
-    
-    pedidoVisualizando = pedido;
+
+
+function verPedido(id, cliente, fecha, total, tipoPago, estado, descripcion) {
+    pedidoActualId = id;
     const modal = document.getElementById('modal-pedido');
     const contenido = document.getElementById('detalles-pedido-content');
-    
-    let itemsHtml = '';
-    pedido.items.forEach(item => {
-        itemsHtml += `
-            <div class="item-pedido">
-                <strong>${item.nombre}</strong> - $${item.precio.toFixed(2)}
-            </div>
-        `;
+    const selectEstado = document.getElementById('nuevo-estado');
+
+    const items = descripcion.split('|').map(item => item.trim());
+
+    let itemsHTML = '';
+    items.forEach(item => {
+        itemsHTML += `<div class="item-detalle-pedido">${item}</div>`;
     });
-    
-    const estadoSeleccionado = pedido.estado || 'pendiente';
-    
+
     contenido.innerHTML = `
-        <p><strong>ID Pedido:</strong> ${pedido.id}</p>
-        <p><strong>Cliente:</strong> ${pedido.cliente_nombre} (${pedido.cliente_email})</p>
-        <p><strong>Fecha:</strong> ${new Date(pedido.fecha).toLocaleDateString('es-ES')} ${new Date(pedido.fecha).toLocaleTimeString('es-ES')}</p>
-        <p><strong>Estado Actual:</strong> <span class="badge badge-${estadoSeleccionado}">${estadoSeleccionado.charAt(0).toUpperCase() + estadoSeleccionado.slice(1)}</span></p>
-        <p><strong>Tipo de Pago:</strong> ${pedido.tipo_pago || 'No especificado'}</p>
+        <p><strong>ID Pedido:</strong> PED-${id}</p>
+        <p><strong>Cliente:</strong> ${cliente}</p>
+        <p><strong>Fecha:</strong> ${new Date(fecha).toLocaleString()}</p>
+        <p><strong>Estado Actual:</strong> <span class="estado-badge ${estado.toLowerCase()}">${estado.toUpperCase()}</span></p>
+        <p><strong>Tipo de Pago:</strong> ${tipoPago}</p>
         <hr>
         <h4>Items:</h4>
-        ${itemsHtml}
+        ${itemsHTML}
         <hr>
-        <p><strong>Total:</strong> $${pedido.total.toFixed(2)}</p>
-        
-        <div class="acciones-pedido">
-            <button class="btn-pdf" onclick="descargarPedidoPDF('${pedido.id}')">📥 Descargar PDF</button>
-            <button class="btn-email" onclick="enviarPedidoPorEmail('${pedido.id}')">📧 Enviar por Email</button>
-        </div>
+        <p><strong>Total:</strong> $${parseFloat(total).toFixed(2)}</p>
     `;
-    
-    document.getElementById('nuevo-estado').value = estadoSeleccionado;
-    modal.style.display = 'block';
+
+    selectEstado.value = estado.toLowerCase();
+
+    modal.style.display = 'flex';
 }
+
+
+// function cerrarModalPedido() {
+//     document.getElementById('modal-pedido').style.display = 'none';
+//     pedidoVisualizando = null;
+// }
 
 function cerrarModalPedido() {
     document.getElementById('modal-pedido').style.display = 'none';
-    pedidoVisualizando = null;
+    pedidoActualId = null;
 }
 
-function guardarEstadoPedido() {
-    if (!pedidoVisualizando) return;
-    
+async function actualizarEstadoPedido() {
     const nuevoEstado = document.getElementById('nuevo-estado').value;
-    if (!nuevoEstado) {
-        alert('Por favor selecciona un nuevo estado');
+
+    if (!pedidoActualId) {
+        alert('No se encontró el pedido seleccionado');
         return;
     }
-    
-    const pedidos = JSON.parse(localStorage.getItem('pedidos')) || [];
-    const indice = pedidos.findIndex(p => p.id === pedidoVisualizando.id);
-    
-    if (indice !== -1) {
-        pedidos[indice].estado = nuevoEstado;
-        localStorage.setItem('pedidos', JSON.stringify(pedidos));
-        alert('Estado del pedido actualizado correctamente');
-        cargarPedidos();
+
+    if (!nuevoEstado) {
+        alert('Selecciona un estado');
+        return;
+    }
+
+    try {
+        const respuesta = await fetch(`http://localhost:3000/api/pedidos/${pedidoActualId}/estado`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                estado: nuevoEstado
+            })
+        });
+
+        const data = await respuesta.json();
+
+        if (!respuesta.ok) {
+            alert(data.mensaje || 'Error al actualizar estado');
+            return;
+        }
+
+        alert('✅ Estado actualizado correctamente');
         cerrarModalPedido();
+        cargarPedidos();
+
+    } catch (error) {
+        console.error('❌ Error actualizando estado:', error);
+        alert('Error al actualizar estado del pedido');
     }
 }
 
-function eliminarPedido(pedidoId) {
-    if (!confirm('¿Estás seguro de que deseas eliminar este pedido?')) {
-        return;
+
+
+async function eliminarPedido(id) {
+    const confirmar = confirm('¿Seguro que deseas eliminar este pedido?');
+
+    if (!confirmar) return;
+
+    try {
+        const respuesta = await fetch(`http://localhost:3000/api/pedidos/${id}`, {
+            method: 'DELETE'
+        });
+
+        const data = await respuesta.json();
+
+        if (!respuesta.ok) {
+            alert(data.mensaje || 'Error al eliminar');
+            return;
+        }
+
+        alert('✅ Pedido eliminado correctamente');
+
+        // 🔥 Recargar tabla
+        cargarPedidos();
+
+    } catch (error) {
+        console.error('❌ Error eliminando:', error);
+        alert('Error al eliminar pedido');
     }
-    
-    let pedidos = JSON.parse(localStorage.getItem('pedidos')) || [];
-    pedidos = pedidos.filter(p => p.id !== pedidoId);
-    localStorage.setItem('pedidos', JSON.stringify(pedidos));
-    cargarPedidos();
-    alert('Pedido eliminado correctamente');
 }
 
 // ====================================================================================================== PDF Y EMAIL ====================================================================
