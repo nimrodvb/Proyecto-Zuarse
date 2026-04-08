@@ -1630,8 +1630,18 @@ app.delete("/api/proveedores/:id", async (req, res) => {
 
 // -------------------------------------------------------------------------------------------------------------- GUARDAR PEDIDO ---------------------------------------------------------------
 app.post('/api/pedidos', async (req, res) => {
+    console.log('===== NUEVO PEDIDO =====');
+    console.log(req.body);
+
     try {
-        const { id_cliente, fecha, estado, tipo_pago, descripcion, total } = req.body;
+        const { id_cliente, fecha, estado, tipo_pago, descripcion, total, productos } = req.body;
+
+        if (!productos || !Array.isArray(productos) || productos.length === 0) {
+            return res.status(400).json({
+                ok: false,
+                mensaje: 'No se recibieron productos para actualizar inventario'
+            });
+        }
 
         console.log('📦 [PEDIDOS] Datos recibidos:', req.body);
 
@@ -1643,6 +1653,9 @@ app.post('/api/pedidos', async (req, res) => {
 
         const pool = await conectarDB();
 
+        // ===============================
+        // 1. GUARDAR PEDIDO
+        // ===============================
         const resultado = await pool.request()
             .input('id_cliente', sql.Int, id_cliente)
             .input('fecha', sql.Date, fecha)
@@ -1657,9 +1670,34 @@ app.post('/api/pedidos', async (req, res) => {
                 SELECT SCOPE_IDENTITY() AS id_pedido;
             `);
 
+        const id_pedido = resultado.recordset[0].id_pedido;
+
+        // ===============================
+        // 2. DESCONTAR STOCK 🔥
+        // ===============================
+        for (const producto of productos) {
+
+            const idProducto = parseInt(producto.id);
+            const cantidad = parseInt(producto.cantidad);
+
+            console.log('➡️ Descontando producto:', idProducto, 'Cantidad:', cantidad);
+
+            await pool.request()
+                .input('idProducto', sql.Int, idProducto)
+                .input('cantidad', sql.Int, cantidad)
+                .query(`
+                    UPDATE PRODUCTOS
+                    SET STOCK = STOCK - @cantidad
+                    WHERE ID = @idProducto
+                `);
+        }
+
+        // ===============================
+        // RESPUESTA
+        // ===============================
         res.status(201).json({
             mensaje: 'Pedido guardado correctamente',
-            id_pedido: resultado.recordset[0].id_pedido
+            id_pedido: id_pedido
         });
 
     } catch (error) {
@@ -1670,6 +1708,7 @@ app.post('/api/pedidos', async (req, res) => {
         });
     }
 });
+
 
 // -------------------------------------------------------------------------------------------------------------- GUARDAR PEDIDO ---------------------------------------------------------------
 

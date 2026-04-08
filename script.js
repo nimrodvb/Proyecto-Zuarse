@@ -373,19 +373,20 @@ function actualizarTotalCarrito() {
 
 
 
+
 // ==================== FUNCIÓN DE COMPRA ====================
 async function realizarCompra(e) {
     if (e) e.preventDefault();
-    
+
     console.log('🛒 [COMPRA] Iniciando proceso de compra...');
-    
+
     // Verificar sesión (buscar en localStorage y sessionStorage)
     let sesion = JSON.parse(localStorage.getItem('sesion_zuarse'));
     if (!sesion) {
         sesion = JSON.parse(sessionStorage.getItem('sesion_zuarse'));
     }
     console.log('📋 [COMPRA] Sesión:', sesion);
-    
+
     if (!sesion || !sesion.logueado) {
         console.error('❌ [COMPRA] Usuario no logueado');
         alert('⚠️ Por favor inicia sesión para realizar una compra');
@@ -394,37 +395,37 @@ async function realizarCompra(e) {
     }
 
     if (sesion.tipo !== 'cliente') {
-    console.error('❌ [COMPRA] La sesión actual no es de cliente');
-    alert('⚠️ Solo los clientes pueden realizar compras');
-    return;
-}
-    
+        console.error('❌ [COMPRA] La sesión actual no es de cliente');
+        alert('⚠️ Solo los clientes pueden realizar compras');
+        return;
+    }
+
     // Verificar que el carrito esté inicializado
     if (!lista) {
         console.error('❌ [COMPRA] Lista de carrito no inicializada');
         lista = document.querySelector('#lista-carrito tbody');
     }
-    
+
     if (!lista) {
         console.error('❌ [COMPRA] No se pudo encontrar el elemento #lista-carrito tbody');
         alert('Error técnico: No se pudo acceder al carrito');
         return;
     }
-    
+
     // Obtener filas del carrito
     const filas = lista.querySelectorAll('tr');
     console.log('📦 [COMPRA] Filas en el carrito:', filas.length);
-    
+
     if (filas.length === 0) {
         console.warn('⚠️ [COMPRA] Carrito vacío');
         alert('❌ Tu carrito está vacío. Agrega productos antes de confirmar el pedido.');
         return;
     }
-    
+
     // Construir items del pedido
     const items = [];
     let total = 0;
-    
+
     filas.forEach((fila, index) => {
         try {
             const celdas = fila.querySelectorAll('td');
@@ -448,45 +449,60 @@ async function realizarCompra(e) {
             const precioText = celdas[2] ? celdas[2].textContent.trim() : '0';
             const precio = parseFloat(precioText.replace(/[^\d.]/g, '').trim());
 
+            const botonBorrar = fila.querySelector('.borrar');
+            const id = botonBorrar ? botonBorrar.getAttribute('data-id') : null;
+
+            const cantidadInput = fila.querySelector('input[type="number"]');
+            const cantidad = cantidadInput ? parseInt(cantidadInput.value) || 1 : 1;
+
             console.log('Nombre:', nombre);
             console.log('Precio texto:', precioText);
             console.log('Precio parseado:', precio);
+            console.log('ID:', id);
+            console.log('Cantidad:', cantidad);
 
             if (isNaN(precio)) {
                 console.warn(`⚠️ [COMPRA] Precio inválido: ${precioText}`);
                 return;
             }
 
+            if (id === null || id === '' || isNaN(parseInt(id))) {
+                console.warn(`⚠️ [COMPRA] ID inválido en la fila ${index}:`, id);
+                return;
+            }
+
             items.push({
+                id: parseInt(id),
                 nombre: nombre,
                 precio: precio,
-                imagen: imagen
+                imagen: imagen,
+                cantidad: cantidad
             });
 
-            total += precio;
+            total += precio * cantidad;
+
         } catch (error) {
             console.error(`❌ [COMPRA] Error procesando fila ${index}:`, error);
         }
     });
-    
+
     console.log('DEBUG: Final items array constructed in realizarCompra:', items);
     console.log('✅ [COMPRA] Items procesados:', items.length, 'Total:', total);
-    
+
     if (items.length === 0) {
         console.error('❌ [COMPRA] No se procesaron items');
         alert('Error: No se pudieron procesar los productos del carrito');
         return;
     }
-    
+
     // Construir descripción para guardar en PEDIDOS.DESCRIPCION
     const descripcion = items
-        .map(item => `${item.nombre} - ₡${item.precio.toFixed(2)}`)
+        .map(item => `${item.nombre} x${item.cantidad} - ₡${item.precio.toFixed(2)}`)
         .join(' | ');
-    
+
     // Mostrar pasarela de pago antes de procesar
     mostrarPasarelaPago(total, async function() {
         // Crear pedido local para usarlo en confirmación/email
-        
         const pedido = {
             id: null,
             cliente_email: sesion.email || sesion.usuario,
@@ -499,11 +515,18 @@ async function realizarCompra(e) {
             tipo_pago: 'Contado',
             descripcion: descripcion
         };
-        
+
         console.log('DEBUG: Pedido object created before saving and PDF generation (script.js):', pedido);
         console.log('📝 [COMPRA] Pedido creado:', pedido);
-        
+
         try {
+            const productos = items.map(item => ({
+                id: item.id,
+                cantidad: item.cantidad
+            }));
+
+            console.log('Productos a enviar:', productos);
+
             const respuesta = await fetch('http://localhost:3000/api/pedidos', {
                 method: 'POST',
                 headers: {
@@ -515,7 +538,8 @@ async function realizarCompra(e) {
                     estado: 'procesando',
                     tipo_pago: 'Contado',
                     descripcion: descripcion,
-                    total: parseFloat(total.toFixed(2))
+                    total: parseFloat(total.toFixed(2)),
+                    productos: productos
                 })
             });
 
@@ -529,7 +553,7 @@ async function realizarCompra(e) {
 
             console.log('✅ [COMPRA] Pedido guardado en BD:', data);
 
-            // ✅ usar el ID real de la BD
+            // usar el ID real de la BD
             pedido.id = data.id_pedido;
 
         } catch (error) {
@@ -537,20 +561,21 @@ async function realizarCompra(e) {
             alert('Error al guardar el pedido en la base de datos');
             return;
         }
-        
-        
+
         // Mostrar confirmación
         mostrarConfirmacionCompra(pedido);
-        
+
         // Enviar email (sin bloquear)
         enviarEmailPedido(pedido);
-        
+
         // Limpiar carrito
         vaciarCarrito();
-        
+
         console.log('✨ [COMPRA] Proceso completado exitosamente');
     });
 }
+
+
 
 
 
