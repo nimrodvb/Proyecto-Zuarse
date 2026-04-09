@@ -36,6 +36,7 @@ document.addEventListener('DOMContentLoaded', function() {
     try { cargarCompras(); } catch(e) { console.error('cargarCompras:', e); }
     try { cargarPedidos(); } catch(e) { console.error('cargarPedidos:', e); }
     try { cargarNotificaciones(); } catch(e) { console.error('cargarNotificaciones:', e); }
+    try { mostrarResumenNotificaciones(); } catch(e) { console.error('mostrarResumenNotificaciones:', e); }
     try { cargarDashboard(); } catch(e) { console.error('cargarDashboard:', e); }
     try { cargarEquipo(); } catch(e) { console.error('cargarEquipo:', e); }
 
@@ -1086,9 +1087,7 @@ function escapeHtml(str) {
 
 
 // =================================================================================================== NOTIFICACIONES =======================================================================================
-function cargarNotificaciones() {
-    const pedidos = JSON.parse(localStorage.getItem('pedidos')) || [];
-    const clientes = JSON.parse(localStorage.getItem('clientes')) || [];
+async function cargarNotificaciones() {
     const tbody = document.getElementById('tbody-notificaciones');
     const sinNotificaciones = document.getElementById('sin-notificaciones');
 
@@ -1096,51 +1095,123 @@ function cargarNotificaciones() {
 
     tbody.innerHTML = '';
 
-    if (pedidos.length === 0) {
-        if (sinNotificaciones) sinNotificaciones.style.display = 'block';
-        return;
-    }
+    try {
+        const respuesta = await fetch('http://localhost:3000/api/notificaciones');
+        const data = await respuesta.json();
 
-    if (sinNotificaciones) sinNotificaciones.style.display = 'none';
-
-    // Mostrar pedidos en orden inverso (más recientes primero)
-    pedidos.reverse().forEach(pedido => {
-        // Buscar nombre del cliente por email
-        const cliente = clientes.find(c => c.email === pedido.cliente_email);
-        const nombreCliente = cliente ? cliente.nombre : pedido.cliente_nombre || 'Cliente desconocido';
-        
-        // Construir lista de productos
-        let productosText = '';
-        pedido.items.forEach(item => {
-            productosText += `${item.nombre}, `;
-        });
-        if (pedido.items && Array.isArray(pedido.items)) {
-            pedido.items.forEach(item => {
-                productosText += `${item.nombre}, `;
-            });
+        if (!data.ok) {
+            sinNotificaciones.style.display = 'block';
+            sinNotificaciones.textContent = 'Error al cargar notificaciones.';
+            return;
         }
-        productosText = productosText.slice(0, -2); // Remover última coma y espacio
-        
-        // Cantidad de artículos
-        const cantidadArticulos = pedido.items.length;
-        
-        // Fecha formateada
-        const fecha = new Date(pedido.fecha).toLocaleDateString('es-ES');
-        
-        const fila = document.createElement('tr');
-        fila.className = 'notificacion-row';
-        fila.setAttribute('data-cliente', nombreCliente.toLowerCase());
-        fila.innerHTML = `
-            <td><strong>${escapeHtml(nombreCliente)}</strong></td>
-            <td>${fecha}</td>
-            <td>#${pedido.id}</td>
-            <td>${escapeHtml(productosText)}</td>
-            <td><span class="badge-cantidad">${cantidadArticulos}</span></td>
-            <td><strong>$${(pedido.total || 0).toFixed(2)}</strong></td>
-        `;
-        tbody.appendChild(fila);
-    });
+
+        const notificaciones = data.notificaciones || [];
+
+        if (notificaciones.length === 0) {
+            sinNotificaciones.style.display = 'block';
+            sinNotificaciones.textContent = 'No hay notificaciones de pedidos. Los pedidos aparecerán aquí.';
+            return;
+        }
+
+        sinNotificaciones.style.display = 'none';
+
+        notificaciones.forEach(p => {
+            const productos = p.DESCRIPCION
+                ? p.DESCRIPCION.split('|').map(x => x.trim()).join(', ')
+                : 'Sin productos';
+
+            const cantidad = p.DESCRIPCION
+                ? p.DESCRIPCION.split('|').length
+                : 0;
+
+            const fila = document.createElement('tr');
+
+           fila.innerHTML = `
+    <td><strong>${p.CLIENTE}</strong></td>
+    <td>${formatearFechaNotificacion(p.FECHA)}</td>
+    <td>#PED-${p.ID}</td>
+    <td>${productos}</td>
+    <td>
+        <span style="
+            background:${(p.ESTADO || '').toLowerCase() === 'pendiente' ? '#f0ad4e' : '#5bc0de'};
+            color:white;
+            padding:5px 10px;
+            border-radius:20px;
+            font-weight:bold;
+            display:inline-block;
+            min-width:100px;
+            text-align:center;
+        ">
+            ${p.ESTADO}
+        </span>
+    </td>
+    <td>
+        <span style="
+            background:#6c7ae0;
+            color:white;
+            padding:5px 10px;
+            border-radius:20px;
+            font-weight:bold;
+            display:inline-block;
+            min-width:32px;
+            text-align:center;
+        ">
+            ${cantidad}
+        </span>
+    </td>
+    <td><strong>₡${parseFloat(p.TOTAL).toFixed(2)}</strong></td>
+`;
+
+            tbody.appendChild(fila);
+        });
+
+    } catch (error) {
+        console.error('Error al cargar notificaciones:', error);
+        sinNotificaciones.style.display = 'block';
+        sinNotificaciones.textContent = 'Error al cargar notificaciones.';
+    }
 }
+
+function formatearFechaNotificacion(fecha) {
+    if (!fecha) return '-';
+
+    const f = new Date(fecha);
+    if (isNaN(f.getTime())) return fecha;
+
+    return f.toLocaleDateString('es-CR');
+}
+
+
+async function mostrarResumenNotificaciones() {
+    try {
+        const respuesta = await fetch('http://localhost:3000/api/notificaciones');
+        const data = await respuesta.json();
+
+        if (!data.ok) return;
+
+        const notificaciones = data.notificaciones || [];
+
+        const pendientes = notificaciones.filter(p =>
+            (p.ESTADO || '').toLowerCase() === 'pendiente'
+        ).length;
+
+        const procesando = notificaciones.filter(p =>
+            (p.ESTADO || '').toLowerCase() === 'procesando'
+        ).length;
+
+        if (pendientes === 0 && procesando === 0) return;
+
+        alert(
+            `📦 Resumen de pedidos\n\n` +
+            `Pendientes: ${pendientes}\n` +
+            `Procesando: ${procesando}`
+        );
+
+    } catch (error) {
+        console.error('Error al mostrar resumen de notificaciones:', error);
+    }
+}
+
 
 
 // ==================================================================================================== PROVEEDORES ======================================================================
@@ -1724,6 +1795,8 @@ async function actualizarEstadoPedido() {
         }
 
         alert('✅ Estado actualizado correctamente');
+        cargarNotificaciones();
+        mostrarResumenNotificaciones();
         cerrarModalPedido();
         cargarPedidos();
 

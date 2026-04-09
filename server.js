@@ -1913,3 +1913,36 @@ app.get('/api/inventario', async (req, res) => {
         });
     }
 });
+
+// -------------------------------------------------------------------------------------------------------------- NOTIFICACIONES DE PEDIDOS ---------------------------------------------------------------
+app.get('/api/notificaciones', async (req, res) => {
+    try {
+        const pool = await conectarDB();
+
+        const resultado = await pool.request().query(`
+            SELECT 
+                P.ID,
+                C.NOMBRE AS CLIENTE,
+                P.FECHA,
+                P.DESCRIPCION,
+                P.TOTAL,
+                P.ESTADO
+            FROM PEDIDOS P
+            INNER JOIN CLIENTES C ON P.ID_CLIENTE = C.ID
+            WHERE P.ESTADO IN ('pendiente', 'procesando')
+            ORDER BY P.FECHA DESC, P.ID DESC
+        `);
+
+        res.json({
+            ok: true,
+            notificaciones: resultado.recordset
+        });
+
+    } catch (error) {
+        console.error('Error al cargar notificaciones:', error);
+        res.status(500).json({
+            ok: false,
+            mensaje: 'Error al cargar notificaciones'
+        });
+    }
+});
