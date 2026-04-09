@@ -63,65 +63,57 @@ document.addEventListener('DOMContentLoaded', cargarProductosTienda);
 
 
 
-function buscarBotonCargarMas() {
-    const elementos = [...document.querySelectorAll('button, a, div, span')];
+if (document.body.dataset.scrollAuto === 'true') {
 
-    return elementos.find(el => {
-        const texto = (el.textContent || '').trim().toLowerCase();
-        return texto === 'cargar mas' || texto === 'cargar más';
-    });
-}
-
-function clickReal(elemento) {
-    if (!elemento) return;
-
-    elemento.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
-    elemento.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
-    elemento.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-}
-
-let cargandoScroll = false;
-
-function intentarCargarMas() {
-    const scrollActual = window.scrollY + window.innerHeight;
-    const altoDocumento = document.documentElement.scrollHeight;
-
-    // puedes mover este número si quieres que cargue antes
-    if (scrollActual < altoDocumento - 350) return;
-    if (cargandoScroll) return;
-
-    const btnCargarMas = buscarBotonCargarMas();
-    if (!btnCargarMas) return;
-
-    cargandoScroll = true;
-    console.log('Activando cargar más...');
-
-    clickReal(btnCargarMas);
-
-    setTimeout(() => {
-        cargandoScroll = false;
-
-        // 🔥 vuelve a revisar solo, sin que el usuario tenga que subir y bajar otra vez
-        intentarCargarMas();
-    }, 600);
-}
-
-window.addEventListener('scroll', intentarCargarMas);
-window.addEventListener('load', () => {
-    setTimeout(intentarCargarMas, 800);
-});
-
-window.addEventListener('load', () => {
-    setTimeout(() => {
+    function buscarBotonCargarMas() {
         const elementos = [...document.querySelectorAll('button, a, div, span')];
 
-        const btnCargarMas = elementos.find(el => {
+        return elementos.find(el => {
             const texto = (el.textContent || '').trim().toLowerCase();
             return texto === 'cargar mas' || texto === 'cargar más';
         });
+    }
 
-        if (btnCargarMas) {
-            btnCargarMas.style.display = 'none';
-        }
-    }, 800);
-});
+    function clickReal(elemento) {
+        if (!elemento) return;
+
+        elemento.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+        elemento.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+        elemento.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    }
+
+    let cargandoScroll = false;
+
+    function intentarCargarMas() {
+        const scrollActual = window.scrollY + window.innerHeight;
+        const altoDocumento = document.documentElement.scrollHeight;
+
+        if (scrollActual < altoDocumento - 350) return;
+        if (cargandoScroll) return;
+
+        const btnCargarMas = buscarBotonCargarMas();
+        if (!btnCargarMas) return;
+
+        cargandoScroll = true;
+        clickReal(btnCargarMas);
+
+        setTimeout(() => {
+            cargandoScroll = false;
+            intentarCargarMas();
+        }, 500);
+    }
+
+    window.addEventListener('scroll', intentarCargarMas);
+
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            const btnCargarMas = buscarBotonCargarMas();
+            if (btnCargarMas) {
+                btnCargarMas.style.display = 'none';
+            }
+
+            intentarCargarMas();
+        }, 300);
+    });
+
+}
