@@ -2,6 +2,42 @@ let modoCategoria = false;
 
 
 
+document.addEventListener('DOMContentLoaded', cargarProductosTienda);
+
+document.addEventListener('DOMContentLoaded', () => {
+    const inputBusqueda = document.getElementById('busqueda-producto');
+
+    if (!inputBusqueda) return;
+
+    inputBusqueda.addEventListener('input', () => {
+        const texto = inputBusqueda.value.trim();
+        const btnCargarMas = document.getElementById('load-more');
+
+        if (texto === '') {
+            currentItem = 8;
+            cargarProductosTienda();
+
+            setTimeout(() => {
+                if (btnCargarMas) {
+                    btnCargarMas.style.display = 'none';
+                }
+
+                intentarCargarMas();
+            }, 300);
+
+        } else {
+            if (btnCargarMas) {
+                btnCargarMas.style.display = 'none';
+            }
+
+            cargarProductosPorBusqueda(texto);
+        }
+    });
+});
+
+
+
+
 // ==================================================================================cargar los productos=================================================================
 async function cargarProductosTienda() {
     const contenedor = document.getElementById('lista-1');
@@ -112,8 +148,6 @@ function buscarBotonCargarMas() {
         return texto === 'cargar mas' || texto === 'cargar más';
     });
 }
-
-document.addEventListener('DOMContentLoaded', cargarProductosTienda);
 
 
 
@@ -230,3 +264,58 @@ async function cargarProductosTienda2(categoria) {
     }
 }
 
+
+
+//==========================================================================BARRA DE BUSCAR=====================================================================
+async function cargarProductosPorBusqueda(textoBusqueda) {
+    const contenedor = document.getElementById('lista-1');
+
+    if (!contenedor) return;
+
+    contenedor.innerHTML = '';
+
+    try {
+        const respuesta = await fetch('/api/productos');
+        const data = await respuesta.json();
+
+        if (!respuesta.ok || !data.ok) {
+            throw new Error(data.mensaje || 'No se pudieron cargar los productos');
+        }
+
+        const productos = data.productos || [];
+
+        const texto = textoBusqueda.toLowerCase().trim();
+
+        const productosFiltrados = productos.filter(producto =>
+            (producto.NOMBRE || '').toLowerCase().includes(texto)
+        );
+
+        if (productosFiltrados.length === 0) {
+            contenedor.innerHTML = '<p>No se encontraron productos.</p>';
+            return;
+        }
+
+        productosFiltrados.forEach(producto => {
+            const box = document.createElement('div');
+            box.className = 'box';
+
+            box.innerHTML = `
+                <img src="${producto.URL_IMAGEN || 'images/default.png'}" alt="${producto.NOMBRE}">
+                <div class="product-text">
+                    <h3>${producto.NOMBRE}</h3>
+                    <p>${producto.DESCRIPCION || ''}</p>
+                    <p class="precio">₡${parseFloat(producto.PRECIO).toFixed(2)}</p>
+                    <a href="#" class="agregar-carrito btn-3" data-id="${producto.ID}">
+                        Agregar al carrito
+                    </a>
+                </div>
+            `;
+
+            contenedor.appendChild(box);
+        });
+
+    } catch (error) {
+        console.error('Error al buscar productos:', error);
+        contenedor.innerHTML = '<p>Error al buscar productos.</p>';
+    }
+}

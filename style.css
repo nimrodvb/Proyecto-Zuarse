@@ -787,3 +787,18 @@ h2 {
     background-color: #9acd32;
     color: white;
 }
+
+.buscador-productos {
+    margin: 20px 0;
+}
+
+#busqueda-producto {
+    width: 100%;
+    max-width: 500px;
+    padding: 12px 18px;
+    border: none;
+    border-radius: 10px;
+    font-size: 18px;
+    outline: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
