@@ -1,4 +1,8 @@
-// Función para cargar los productos desde la base de datos y mostrarlos en la tienda
+let modoCategoria = false;
+
+
+
+// ==================================================================================cargar los productos=================================================================
 async function cargarProductosTienda() {
     const contenedor = document.getElementById('lista-1');
 
@@ -15,6 +19,60 @@ async function cargarProductosTienda() {
         }
 
         const productos = data.productos || [];
+
+
+
+
+// ============================================================================== CARGAR CATEGORÍAS ======
+const listaCategorias = document.getElementById('lista-categorias');
+
+if (listaCategorias) {
+    listaCategorias.innerHTML = '';
+
+    const categorias = [
+        "Todas",
+        ...new Set(productos.map(p => p.CATEGORIA || "Sin categoría"))
+    ];
+
+categorias.forEach(cat => {
+    const li = document.createElement('li');
+    li.textContent = cat;
+
+   li.addEventListener('click', () => {
+    const btnCargarMas = document.getElementById('load-more');
+
+    if (cat === 'Todas') {
+        modoCategoria = false;
+
+        currentItem = 8;
+
+        cargarProductosTienda();
+
+        setTimeout(() => {
+            if (btnCargarMas) {
+                btnCargarMas.style.display = 'none';
+            }
+
+            intentarCargarMas();
+        }, 300);
+
+    } else {
+        modoCategoria = true;
+
+        if (btnCargarMas) {
+            btnCargarMas.style.display = 'none';
+        }
+
+        cargarProductosTienda2(cat);
+    }
+});
+
+    listaCategorias.appendChild(li);
+});
+}
+
+// =============================================================================== CARGAR CATEGORÍAS ======
+
 
         if (productos.length === 0) {
             contenedor.innerHTML = '<p>No hay productos disponibles.</p>';
@@ -59,10 +117,6 @@ document.addEventListener('DOMContentLoaded', cargarProductosTienda);
 
 
 
-
-
-
-
 if (document.body.dataset.scrollAuto === 'true') {
 
     function buscarBotonCargarMas() {
@@ -85,6 +139,8 @@ if (document.body.dataset.scrollAuto === 'true') {
     let cargandoScroll = false;
 
     function intentarCargarMas() {
+        if (modoCategoria) return;
+
         const scrollActual = window.scrollY + window.innerHeight;
         const altoDocumento = document.documentElement.scrollHeight;
 
@@ -117,3 +173,60 @@ if (document.body.dataset.scrollAuto === 'true') {
     });
 
 }
+
+
+
+//======================================================================= Categorias de producto ==========================================================================
+
+
+async function cargarProductosTienda2(categoria) {
+    const contenedor = document.getElementById('lista-1');
+
+    if (!contenedor) return;
+
+    contenedor.innerHTML = '';
+
+    try {
+        const respuesta = await fetch('/api/productos');
+        const data = await respuesta.json();
+
+        if (!respuesta.ok || !data.ok) {
+            throw new Error(data.mensaje || 'No se pudieron cargar los productos');
+        }
+
+        const productos = data.productos || [];
+
+        const productosFiltrados = productos.filter(producto =>
+            (producto.CATEGORIA || 'Sin categoría').toLowerCase() === categoria.toLowerCase()
+        );
+
+        if (productosFiltrados.length === 0) {
+            contenedor.innerHTML = '<p>No hay productos en esta categoría.</p>';
+            return;
+        }
+
+        productosFiltrados.forEach(producto => {
+            const box = document.createElement('div');
+            box.className = 'box';
+
+            box.innerHTML = `
+                <img src="${producto.URL_IMAGEN || 'images/default.png'}" alt="${producto.NOMBRE}">
+                <div class="product-text">
+                    <h3>${producto.NOMBRE}</h3>
+                    <p>${producto.DESCRIPCION || ''}</p>
+                    <p class="precio">₡${parseFloat(producto.PRECIO).toFixed(2)}</p>
+                    <a href="#" class="agregar-carrito btn-3" data-id="${producto.ID}">
+                        Agregar al carrito
+                    </a>
+                </div>
+            `;
+
+            contenedor.appendChild(box);
+        });
+
+    } catch (error) {
+        console.error('Error al cargar productos por categoría:', error);
+        contenedor.innerHTML = '<p>Error al cargar productos.</p>';
+    }
+}
+
