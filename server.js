@@ -1920,3 +1920,232 @@ app.get('/api/notificaciones', async (req, res) => {
         });
     }
 });
+
+
+// =========================================================================================================== COMPRAS ==================================================================================
+
+
+// ================================================================================== OBTENER COMPRAS =================================================================
+app.get("/api/compras", async (req, res) => {
+  try {
+    // 🔹 Conectarse a la base de datos
+    const pool = await conectarDB();
+
+    // 🔹 Consultar compras junto con el nombre del proveedor
+    const result = await pool.request().query(`
+      SELECT 
+        C.ID,
+        C.FACTURA_ELECTRONICA,
+        C.ID_PROVEEDOR,
+        P.NOMBRE AS PROVEEDOR,
+        C.FECHA,
+        C.DESCRIPCION,
+        C.TOTAL
+      FROM COMPRAS C
+      INNER JOIN PROVEEDORES P ON C.ID_PROVEEDOR = P.ID
+      ORDER BY C.FECHA DESC, C.ID DESC
+    `);
+
+    // 🔹 Responder al frontend
+    res.json({
+      ok: true,
+      compras: result.recordset
+    });
+
+  } catch (error) {
+    console.error("Error en GET /api/compras:", error);
+    res.status(500).json({
+      ok: false,
+      mensaje: "Error al obtener las compras"
+    });
+  }
+});
+
+
+// ================================================================================== GUARDAR COMPRA =================================================================
+// ================================================================================== GUARDAR COMPRA Y AUMENTAR STOCK =================================================================
+app.post('/api/compras', async (req, res) => {
+    try {
+        // 🔹 Obtener datos enviados desde el frontend
+        const {
+            factura,
+            proveedor,
+            fecha,
+            descripcion,
+            total,
+            productos
+        } = req.body;
+
+        // 🔹 Validar campos obligatorios
+        if (!factura || !proveedor || !fecha || !descripcion || total == null) {
+            return res.status(400).json({
+                ok: false,
+                mensaje: 'Faltan datos obligatorios para guardar la compra'
+            });
+        }
+
+        // 🔹 Validar que exista detalle de productos
+        if (!Array.isArray(productos) || productos.length === 0) {
+            return res.status(400).json({
+                ok: false,
+                mensaje: 'La compra debe incluir al menos un producto'
+            });
+        }
+
+        // 🔹 Conectarse a la base de datos
+        const pool = await conectarDB();
+
+        // 🔹 Crear transacción para asegurar que todo se guarde bien
+        const transaction = new sql.Transaction(pool);
+        await transaction.begin();
+
+        try {
+            // 🔹 Insertar compra en tabla COMPRAS
+            const requestCompra = new sql.Request(transaction);
+
+            await requestCompra
+                .input('factura', sql.NVarChar(100), factura)
+                .input('idProveedor', sql.Int, parseInt(proveedor))
+                .input('fecha', sql.Date, fecha)
+                .input('descripcion', sql.NVarChar(sql.MAX), descripcion)
+                .input('total', sql.Decimal(10, 2), total)
+                .query(`
+                    INSERT INTO COMPRAS (
+                        FACTURA_ELECTRONICA,
+                        ID_PROVEEDOR,
+                        FECHA,
+                        DESCRIPCION,
+                        TOTAL
+                    )
+                    VALUES (
+                        @factura,
+                        @idProveedor,
+                        @fecha,
+                        @descripcion,
+                        @total
+                    )
+                `);
+
+            // 🔹 Recorrer productos y aumentar stock
+            for (const item of productos) {
+                const requestStock = new sql.Request(transaction);
+
+                await requestStock
+                    .input('idProducto', sql.Int, parseInt(item.idProducto))
+                    .input('cantidad', sql.Int, parseInt(item.cantidad))
+                    .query(`
+                        UPDATE PRODUCTOS
+                        SET STOCK = STOCK + @cantidad
+                        WHERE ID = @idProducto
+                    `);
+            }
+
+            // 🔹 Confirmar transacción
+            await transaction.commit();
+
+            // 🔹 Respuesta exitosa
+            res.json({
+                ok: true,
+                mensaje: 'Compra guardada y stock actualizado correctamente'
+            });
+
+        } catch (errorInterno) {
+            // 🔹 Si algo falla, revertir todo
+            await transaction.rollback();
+            throw errorInterno;
+        }
+
+    } catch (error) {
+        console.error('Error al guardar compra y actualizar stock:', error);
+        res.status(500).json({
+            ok: false,
+            mensaje: 'Error al guardar la compra y actualizar el stock'
+        });
+    }
+});
+
+
+// ================================================================================== OBTENER COMPRAS =================================================================
+app.get('/api/compras', async (req, res) => {
+    try {
+        // 🔹 Conectarse a la base de datos
+        const pool = await conectarDB();
+
+        // 🔹 Consultar compras junto con el nombre del proveedor
+        const result = await pool.request().query(`
+            SELECT 
+                C.ID,
+                C.FACTURA_ELECTRONICA,
+                C.ID_PROVEEDOR,
+                C.FECHA,
+                C.DESCRIPCION,
+                C.TOTAL,
+                P.NOMBRE AS PROVEEDOR
+            FROM COMPRAS C
+            INNER JOIN PROVEEDORES P ON C.ID_PROVEEDOR = P.ID
+            ORDER BY C.FECHA DESC, C.ID DESC
+        `);
+
+        // 🔹 Responder al frontend
+        res.json({
+            ok: true,
+            compras: result.recordset
+        });
+
+    } catch (error) {
+        console.error('Error al obtener compras:', error);
+        res.status(500).json({
+            ok: false,
+            mensaje: 'Error al obtener las compras'
+        });
+    }
+});
+
+
+// ================================================================================== ELIMINAR COMPRA =================================================================
+app.delete('/api/compras/:id', async (req, res) => {
+    try {
+        // 🔹 Obtener ID de la compra
+        const idCompra = parseInt(req.params.id);
+
+        // 🔹 Validar ID
+        if (isNaN(idCompra)) {
+            return res.status(400).json({
+                ok: false,
+                mensaje: 'ID de compra inválido'
+            });
+        }
+
+        // 🔹 Conectarse a la base de datos
+        const pool = await conectarDB();
+
+        // 🔹 Ejecutar eliminación
+        const result = await pool.request()
+            .input('idCompra', sql.Int, idCompra)
+            .query(`
+                DELETE FROM COMPRAS
+                WHERE ID = @idCompra
+            `);
+
+        // 🔹 Validar si se eliminó algo
+        if (result.rowsAffected[0] === 0) {
+            return res.status(404).json({
+                ok: false,
+                mensaje: 'Compra no encontrada'
+            });
+        }
+
+        // 🔹 Responder éxito
+        res.json({
+            ok: true,
+            mensaje: 'Compra eliminada correctamente'
+        });
+
+    } catch (error) {
+        console.error('Error al eliminar compra:', error);
+        res.status(500).json({
+            ok: false,
+            mensaje: 'Error al eliminar la compra'
+        });
+    }
+});

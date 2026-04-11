@@ -11,6 +11,8 @@ let compraEditando = null;
 let empleadoEditando = null;
 let pedidoActualId = null;
 let pedidoActualData = null;
+// ================================================================================== DETALLE TEMPORAL DE LA COMPRA =================================================================
+let detalleCompraActual = [];
 
 
 
@@ -27,7 +29,6 @@ function cerrarSesionAdmin() {
 document.addEventListener('DOMContentLoaded', function() {
     // Configurar eventos primero
     try { configurarEventos(); } catch(e) { console.error('configurarEventos:', e); }
-
     try { cargarProductos(); } catch(e) { console.error('cargarProductos:', e); }
     try { cargarInventario(); } catch(e) { console.error('cargarInventario:', e); }
     try { cargarClientes(); } catch(e) { console.error('cargarClientes:', e); }
@@ -39,6 +40,7 @@ document.addEventListener('DOMContentLoaded', function() {
     try { mostrarResumenNotificaciones(); } catch(e) { console.error('mostrarResumenNotificaciones:', e); }
     try { cargarDashboard(); } catch(e) { console.error('cargarDashboard:', e); }
     try { cargarEquipo(); } catch(e) { console.error('cargarEquipo:', e); }
+    
 
     const btnX = document.querySelector('.close-modal');
     const btnCerrar = document.getElementById('btn-cerrar-modal');
@@ -57,6 +59,30 @@ if (btnDescargarPDF) {
     if (btnX) btnX.addEventListener('click', cerrarModalPedido);
     if (btnCerrar) btnCerrar.addEventListener('click', cerrarModalPedido);
     if (btnGuardarEstado) btnGuardarEstado.addEventListener('click', actualizarEstadoPedido);
+    try {
+    const selectCategoriaCompra = document.getElementById('compra-categoria-select');
+
+    if (selectCategoriaCompra) {
+        selectCategoriaCompra.addEventListener('change', filtrarProductosCompra);
+    }
+
+} catch (e) {
+    console.error('evento categoria compra:', e);
+}
+
+
+// ================================================================================== EVENTO CAMBIO DE PRODUCTO EN COMPRAS =================================================================
+try {
+    const selectProductoCompra = document.getElementById('compra-producto-select');
+
+    if (selectProductoCompra) {
+        selectProductoCompra.addEventListener('change', cargarPrecioProductoCompra);
+    }
+
+} catch (e) {
+    console.error('evento producto compra:', e);
+}
+
 });
 
 // ============================================================================================================ CONFIGURAR EVENTOS ========================================================
@@ -1399,225 +1425,539 @@ async function eliminarProveedor(id) {
 
 
 // ====================================================================================================== COMPRAS =========================================================================
-function mostrarFormCompra() {
+
+
+
+// --------------------------------------------------------------------------------------- MOSTRAR FORMULARIO DE COMPRA --------------------------------------------------------------------
+async function mostrarFormCompra() {
+    // 🔹 Reiniciar variable de edición
     compraEditando = null;
+
+    // 🔹 Resetear formulario
     const form = document.getElementById('formulario-compra');
     if (form) form.reset();
 
-    // Limpiar campos calculados
-    document.getElementById('compra-productos').value = '';
-    document.getElementById('compra-total').value = '';
-    
-    // Cargar proveedores en el select
-    const proveedores = JSON.parse(localStorage.getItem('proveedores')) || [];
-    const select = document.getElementById('compra-proveedor');
-    if (select) {
-        select.innerHTML = '<option value="">-- Selecciona proveedor --</option>' + 
-            proveedores.map(p => `<option value="${escapeHtml(p.nombre)}">${escapeHtml(p.nombre)}</option>`).join('');
+    // 🔹 Limpiar campos calculados
+    const campoProductos = document.getElementById('compra-productos');
+    const campoTotal = document.getElementById('compra-total');
+
+    if (campoProductos) campoProductos.value = '';
+    if (campoTotal) campoTotal.value = '';
+
+        // 🔹 Reiniciar arreglo temporal de productos de la compra
+    detalleCompraActual = [];
+
+    // 🔹 Cargar proveedores desde el backend
+    try {
+        const response = await fetch('/api/proveedores');
+        const data = await response.json();
+
+        const selectProveedor = document.getElementById('compra-proveedor');
+
+        if (selectProveedor) {
+            selectProveedor.innerHTML = '<option value="">-- Selecciona proveedor --</option>';
+
+            if (data.ok && Array.isArray(data.proveedores)) {
+                data.proveedores.forEach(proveedor => {
+                    const option = document.createElement('option');
+
+                    // 🔹 value = ID del proveedor
+                    option.value = proveedor.ID;
+
+                    // 🔹 texto visible = nombre del proveedor
+                    option.textContent = proveedor.NOMBRE;
+
+                    selectProveedor.appendChild(option);
+                });
+            }
+        }
+
+    } catch (error) {
+        console.error('Error al cargar proveedores:', error);
+        alert('No se pudieron cargar los proveedores');
     }
 
-    // Cargar categorías
-    const categorias = JSON.parse(localStorage.getItem('categorias')) || [];
-    const selectCat = document.getElementById('compra-categoria-select');
-    if (selectCat) {
-        selectCat.innerHTML = '<option value="">-- Todas --</option>' + 
-            categorias.map(c => `<option value="${escapeHtml(c.nombre)}">${escapeHtml(c.nombre)}</option>`).join('');
-    }
-    
-    // Cargar productos iniciales
-    filtrarProductosCompra();
+    // 🔹 Cargar categorías desde el backend
+    await cargarCategoriasCompra();
 
-    // Set default date to today
+    // 🔹 Cargar productos iniciales
+    await filtrarProductosCompra();
+
+    // 🔹 Poner la fecha actual por defecto
     const dateInput = document.getElementById('compra-fecha');
     if (dateInput) {
         dateInput.valueAsDate = new Date();
     }
 
+    // 🔹 Mostrar el contenedor del formulario
     const cont = document.getElementById('form-compra');
     if (cont) cont.style.display = 'block';
+
+    // 🔹 Cambiar el título
     const titulo = document.querySelector('#form-compra h3');
     if (titulo) titulo.textContent = 'Registrar Compra';
 }
 
+// --------------------------------------------------------------------------------------- OCULTAR FORMULARIO DE COMPRA ---------------------------------------------------------------------------------------
 function ocultarFormCompra() {
+    // 🔹 Ocultar contenedor del formulario
     const cont = document.getElementById('form-compra');
     if (cont) cont.style.display = 'none';
+
+    // 🔹 Resetear formulario
     const form = document.getElementById('formulario-compra');
     if (form) form.reset();
+
+    // 🔹 Limpiar variable de edición
     compraEditando = null;
 }
 
-function guardarCompra(e) {
-    e.preventDefault();
 
+// --------------------------------------------------------------------------------------- GUARDAR COMPRA EN BD ---------------------------------------------------------------------------------------
+// ================================================================================== GUARDAR COMPRA EN BD Y ENVIAR DETALLE =================================================================
+async function guardarCompra(e) {
+    e.preventDefault(); // 🔹 Evita que el formulario recargue la página
+
+    // 🔹 Obtener valores del formulario
     const proveedor = document.getElementById('compra-proveedor').value;
     const idFactura = document.getElementById('compra-id-factura').value.trim();
     const fecha = document.getElementById('compra-fecha').value;
     const productosTexto = document.getElementById('compra-productos').value.trim();
     const total = parseFloat(document.getElementById('compra-total').value || 0);
 
-    if (!productosTexto || total < 0) {
+    // 🔹 Validar que haya productos agregados
+    if (!productosTexto || total <= 0 || detalleCompraActual.length === 0) {
         alert('Debes agregar al menos un producto a la compra.');
         return;
     }
 
+    // 🔹 Validar campos obligatorios
     if (!proveedor || !idFactura || !fecha) {
-        alert('Por favor completa los campos obligatorios');
+        alert('Por favor completa todos los campos obligatorios.');
         return;
     }
 
-    const compra = {
-        id: compraEditando?.id || Date.now(),
-        proveedor: proveedor,
-        idFactura: idFactura,
-        fecha: fecha,
-        productos: productosTexto,
-        total: total,
-        fechaRegistro: new Date().toISOString()
-    };
+    try {
+        // 🔹 Enviar datos al backend
+        const response = await fetch('/api/compras', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                factura: idFactura,                  // FACTURA_ELECTRONICA
+                proveedor: proveedor,                // ID_PROVEEDOR
+                fecha: fecha,                        // FECHA
+                descripcion: productosTexto,         // DESCRIPCION
+                total: total,                        // TOTAL
+                productos: detalleCompraActual       // 🔥 detalle real para aumentar stock
+            })
+        });
 
-    let compras = JSON.parse(localStorage.getItem('compras')) || [];
+        const data = await response.json();
 
-    if (compraEditando) {
-        compras = compras.map(c => c.id === compraEditando.id ? compra : c);
-    } else {
-        compras.push(compra);
+        // 🔹 Validar respuesta del servidor
+        if (!response.ok || !data.ok) {
+            throw new Error(data.mensaje || 'Error al guardar la compra');
+        }
+
+        // 🔹 Limpiar arreglo temporal
+        detalleCompraActual = [];
+
+        // 🔹 Limpiar formulario
+        ocultarFormCompra();
+
+        // 🔹 Recargar lista
+        cargarCompras();
+
+        // 🔹 Recargar inventario para ver el stock actualizado
+        try { cargarInventario(); } catch (e) { console.error('cargarInventario:', e); }
+
+        // 🔹 Mensaje de éxito
+        alert('Compra registrada correctamente y stock actualizado');
+        cargarProductos();
+
+    } catch (error) {
+        console.error('Error al guardar compra:', error);
+        alert('Error al guardar la compra');
     }
-
-    localStorage.setItem('compras', JSON.stringify(compras));
-    ocultarFormCompra();
-    cargarCompras();
-    alert('Compra registrada exitosamente');
 }
 
-function cargarCompras() {
-    const compras = JSON.parse(localStorage.getItem('compras')) || [];
+
+
+// --------------------------------------------------------------------------------------- CARGAR COMPRAS DESDE BD ---------------------------------------------------------------------------------------
+async function cargarCompras() {
+    // 🔹 Referencias del HTML
     const tbody = document.getElementById('tbody-compras');
     const sinCompras = document.getElementById('sin-compras');
     const filtroInput = document.getElementById('filtro-compra-proveedor');
     const filtro = filtroInput ? filtroInput.value.toLowerCase().trim() : '';
 
+    // 🔹 Si no existe la tabla, salir
     if (!tbody) return;
 
+    // 🔹 Limpiar contenido actual
     tbody.innerHTML = '';
 
-    const comprasFiltradas = compras.filter(c => c.proveedor.toLowerCase().includes(filtro));
+    try {
+        // 🔹 Pedir compras al backend
+        const response = await fetch('/api/compras');
+        const data = await response.json();
 
-    if (comprasFiltradas.length === 0) {
+        // 🔹 Validar respuesta
+        if (!response.ok || !data.ok) {
+            throw new Error(data.mensaje || 'No se pudieron cargar las compras');
+        }
+
+        // 🔹 Obtener arreglo de compras
+        let compras = data.compras || [];
+
+        // 🔹 Filtrar por nombre del proveedor si el usuario escribió algo
+        if (filtro) {
+            compras = compras.filter(c =>
+                (c.PROVEEDOR || '').toLowerCase().includes(filtro)
+            );
+        }
+
+        // 🔹 Si no hay compras, mostrar mensaje
+        if (compras.length === 0) {
+            if (sinCompras) {
+                sinCompras.style.display = 'block';
+                sinCompras.textContent = 'No hay compras registradas.';
+            }
+            return;
+        }
+
+        // 🔹 Ocultar mensaje vacío
+        if (sinCompras) sinCompras.style.display = 'none';
+
+        // 🔹 Recorrer compras y dibujar filas
+        compras.forEach(c => {
+            const row = document.createElement('tr');
+            row.className = 'compra-row';
+
+            row.innerHTML = `
+                <td>
+                #${c.ID} <br>
+                <small>${c.FACTURA_ELECTRONICA || ''}</small>
+                </td>
+                <td>${c.PROVEEDOR || 'Sin proveedor'}</td>
+                <td>${c.FECHA ? new Date(c.FECHA).toLocaleDateString() : ''}</td>
+                <td>${c.DESCRIPCION || ''}</td>
+                <td>₡${parseFloat(c.TOTAL || 0).toFixed(2)}</td>
+                <td>
+                    
+                    <button class="btn-eliminar" onclick="eliminarCompra(${c.ID})">Eliminar</button>
+                </td>
+            `;
+
+            tbody.appendChild(row);
+        });
+
+    } catch (error) {
+        console.error('Error al cargar compras:', error);
+
         if (sinCompras) {
             sinCompras.style.display = 'block';
-            sinCompras.textContent = compras.length === 0 ? 'No hay compras registradas.' : 'No se encontraron compras de ese proveedor.';
+            sinCompras.textContent = 'Error al cargar compras.';
         }
+    }
+}
+
+
+// ================================================================================== ELIMINAR COMPRA SOLO DE LA BASE DE DATOS =================================================================
+async function eliminarCompra(id) {
+    // 🔹 Confirmar eliminación
+    if (!confirm('¿Estás seguro de que deseas eliminar esta compra? Esta acción solo borrará el registro de la compra y no modificará el stock.')) {
         return;
     }
 
-    if (sinCompras) sinCompras.style.display = 'none';
+    try {
+        // 🔹 Enviar petición DELETE al backend
+        const response = await fetch(`/api/compras/${id}`, {
+            method: 'DELETE'
+        });
 
-    // Ordenar por fecha descendente
-    comprasFiltradas.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+        const data = await response.json();
 
-    comprasFiltradas.forEach(c => {
-        const row = document.createElement('tr');
-        row.className = 'compra-row';
-        row.setAttribute('data-proveedor', c.proveedor.toLowerCase());
-        row.innerHTML = `
-            <td>${escapeHtml(c.idFactura)}</td>
-            <td>${escapeHtml(c.proveedor)}</td>
-            <td>${new Date(c.fecha).toLocaleDateString()}</td>
-            <td>${escapeHtml(c.productos)}</td>
-            <td>₡${(c.total || 0).toFixed(2)}</td>
-            <td>
-                <button class="btn-editar" onclick="editarCompra(${c.id})">Editar</button>
-                <button class="btn-eliminar" onclick="eliminarCompra(${c.id})">Eliminar</button>
-            </td>
-        `;
-        tbody.appendChild(row);
-    });
-}
+        // 🔹 Validar respuesta
+        if (!response.ok || !data.ok) {
+            throw new Error(data.mensaje || 'No se pudo eliminar la compra');
+        }
 
-function editarCompra(id) {
-    const compras = JSON.parse(localStorage.getItem('compras')) || [];
-    const compra = compras.find(c => c.id === id);
-    if (!compra) return;
+        // 🔹 Recargar tabla de compras
+        cargarCompras();
 
-    mostrarFormCompra(); // Esto carga los proveedores y resetea
-    compraEditando = compra;
+        // 🔹 Mensaje de éxito
+        alert('Compra eliminada correctamente');
 
-    document.getElementById('compra-proveedor').value = compra.proveedor;
-    document.getElementById('compra-id-factura').value = compra.idFactura;
-    document.getElementById('compra-fecha').value = compra.fecha;
-    document.getElementById('compra-productos').value = compra.productos;
-    document.getElementById('compra-total').value = compra.total;
-
-    const titulo = document.querySelector('#form-compra h3');
-    if (titulo) titulo.textContent = 'Editar Compra';
-}
-
-function eliminarCompra(id) {
-    if (!confirm('¿Estás seguro de que deseas eliminar esta compra?')) return;
-
-    let compras = JSON.parse(localStorage.getItem('compras')) || [];
-    compras = compras.filter(c => c.id !== id);
-    localStorage.setItem('compras', JSON.stringify(compras));
-    cargarCompras();
-}
-
-function filtrarProductosCompra() {
-    const cat = document.getElementById('compra-categoria-select').value;
-    const productos = JSON.parse(localStorage.getItem('productos')) || [];
-    const selectProd = document.getElementById('compra-producto-select');
-    
-    if (!selectProd) return;
-    
-    let filtrados = productos;
-    if (cat) {
-        filtrados = productos.filter(p => p.categoria === cat);
+    } catch (error) {
+        console.error('Error al eliminar compra:', error);
+        alert('Error al eliminar la compra');
     }
-    
-    selectProd.innerHTML = '<option value="">-- Selecciona producto --</option>' + 
-        filtrados.map(p => `<option value="${escapeHtml(p.nombre)}">${escapeHtml(p.nombre)}</option>`).join('');
 }
 
+// ================================================================================== CARGAR PRODUCTOS DE COMPRA SEGÚN LA CATEGORÍA =================================================================
+async function filtrarProductosCompra() {
+    // 🔹 Obtener los selects
+    const selectCategoria = document.getElementById('compra-categoria-select');
+    const selectProducto = document.getElementById('compra-producto-select');
+
+    // 🔹 Si no existen, salir
+    if (!selectCategoria || !selectProducto) return;
+
+    // 🔹 Obtener la categoría elegida
+    const idCategoria = selectCategoria.value;
+
+    // 🔹 Limpiar el select de productos
+    selectProducto.innerHTML = '<option value="">-- Selecciona producto --</option>';
+
+        // 🔹 Limpiar el precio unitario cuando cambia la categoría
+    const inputPrecio = document.getElementById('compra-item-precio');
+    if (inputPrecio) inputPrecio.value = '';
+
+    try {
+        // 🔹 Pedir productos al backend
+        const response = await fetch('/api/productos');
+        const data = await response.json();
+
+        // 🔹 Validar respuesta
+        if (!response.ok || !data.ok) {
+            throw new Error(data.mensaje || 'No se pudieron cargar los productos');
+        }
+
+        // 🔹 Obtener lista de productos
+        let productos = data.productos || [];
+
+        // 🔹 Si hay categoría seleccionada, filtrar por ID_CATEGORIA
+        if (idCategoria) {
+            productos = productos.filter(producto =>
+                String(producto.ID_CATEGORIA) === String(idCategoria)
+            );
+        }
+
+        // 🔹 Agregar productos al select
+        productos.forEach(producto => {
+            const option = document.createElement('option');
+
+            // 🔹 Guardar el ID del producto
+            option.value = producto.ID;
+
+            // 🔹 Mostrar nombre
+            option.textContent = producto.NOMBRE;
+
+            selectProducto.appendChild(option);
+        });
+
+    } catch (error) {
+        console.error('Error al filtrar productos de compra:', error);
+    }
+}
+
+// ================================================================================== AGREGAR PRODUCTO A LA COMPRA =================================================================
 function agregarProductoACompra() {
+    // 🔹 Obtener elementos del formulario
     const prodSelect = document.getElementById('compra-producto-select');
-    const prodNombre = prodSelect.value;
     const itemCantidadInput = document.getElementById('compra-item-cantidad');
     const itemPrecioInput = document.getElementById('compra-item-precio');
-    
+
+    // 🔹 Obtener el ID del producto seleccionado
+    const prodId = prodSelect.value;
+
+    // 🔹 Obtener el NOMBRE visible del producto seleccionado
+    const prodNombre = prodSelect.options[prodSelect.selectedIndex]?.text || '';
+
+    // 🔹 Obtener cantidad y precio
     const cantidad = parseInt(itemCantidadInput.value);
     const precio = parseFloat(itemPrecioInput.value);
 
-    if (!prodNombre) {
+    // 🔹 Validar producto
+    if (!prodId) {
         alert('Por favor, selecciona un producto.');
         return;
     }
+
+    // 🔹 Validar cantidad
     if (isNaN(cantidad) || cantidad <= 0) {
         alert('Por favor, ingresa una cantidad válida.');
         itemCantidadInput.focus();
         return;
     }
+
+    // 🔹 Validar precio
     if (isNaN(precio) || precio < 0) {
         alert('Por favor, ingresa un precio unitario válido.');
         itemPrecioInput.focus();
         return;
     }
 
+    // 🔹 Calcular subtotal
     const subtotal = cantidad * precio;
+
+    // 🔹 Guardar también el detalle real en memoria para luego enviarlo al backend
+    detalleCompraActual.push({
+        idProducto: parseInt(prodId),
+        nombre: prodNombre,
+        cantidad: cantidad,
+        precio: precio,
+        subtotal: subtotal
+    });
+
+    // 🔹 Crear línea de texto visible para el textarea
     const itemTexto = `${cantidad} - ${prodNombre} - ₡${precio.toFixed(2)} - ₡${subtotal.toFixed(2)}`;
 
-    // Actualizar listado de productos
+    // 🔹 Obtener textarea donde se listan los productos agregados
     const productosTextarea = document.getElementById('compra-productos');
+
+    // 🔹 Agregar nueva línea al listado visible
     productosTextarea.value += (productosTextarea.value ? '\n' : '') + itemTexto;
 
-    // Actualizar totales
+    // 🔹 Obtener input del total general
     const totalCompraInput = document.getElementById('compra-total');
+
+    // 🔹 Sumar subtotal al total actual
     totalCompraInput.value = ((parseFloat(totalCompraInput.value) || 0) + subtotal).toFixed(2);
 
-    // Limpiar campos de item
+    // 🔹 Limpiar campos para seguir agregando productos
     prodSelect.value = '';
     itemCantidadInput.value = '1';
     itemPrecioInput.value = '';
 }
+
+
+
+// ================================================================================== CARGAR PROVEEDORES EN EL SELECT DE COMPRAS =================================================================
+async function cargarProveedoresCompra() {
+    // 🔹 Obtener el select de proveedores
+    const selectProveedor = document.getElementById('compra-proveedor');
+
+    // 🔹 Si no existe, salir
+    if (!selectProveedor) return;
+
+    // 🔹 Dejar solo la opción por defecto
+    selectProveedor.innerHTML = '<option value="">-- Selecciona proveedor --</option>';
+
+    try {
+        // 🔹 Pedir proveedores al backend
+        const response = await fetch('/api/proveedores');
+        const data = await response.json();
+
+        // 🔹 Validar respuesta
+        if (!response.ok || !data.ok) {
+            throw new Error(data.mensaje || 'No se pudieron cargar los proveedores');
+        }
+
+        // 🔹 Recorrer proveedores y agregarlos al select
+        data.proveedores.forEach(proveedor => {
+            const option = document.createElement('option');
+
+            // 🔹 Guardar el ID como value
+            option.value = proveedor.ID;
+
+            // 🔹 Mostrar el nombre del proveedor
+            option.textContent = proveedor.NOMBRE;
+
+            selectProveedor.appendChild(option);
+        });
+
+    } catch (error) {
+        console.error('Error al cargar proveedores de compra:', error);
+    }
+}
+
+
+// ================================================================================== CARGAR CATEGORÍAS EN EL SELECT DE COMPRAS =================================================================
+async function cargarCategoriasCompra() {
+    // 🔹 Obtener el select de categorías
+    const selectCategoria = document.getElementById('compra-categoria-select');
+
+    // 🔹 Si no existe, salir
+    if (!selectCategoria) return;
+
+    // 🔹 Dejar solo la opción por defecto
+    selectCategoria.innerHTML = '<option value="">-- Todas --</option>';
+
+    try {
+        // 🔹 Pedir categorías al backend
+        const response = await fetch('/api/categorias');
+        const data = await response.json();
+
+        // 🔹 Validar respuesta
+        if (!response.ok || !data.ok) {
+            throw new Error(data.mensaje || 'No se pudieron cargar las categorías');
+        }
+
+        // 🔹 Recorrer categorías y agregarlas al select
+        data.categorias.forEach(categoria => {
+            const option = document.createElement('option');
+
+            // 🔹 Guardar el ID de la categoría
+            option.value = categoria.ID;
+
+            // 🔹 Mostrar el nombre
+            option.textContent = categoria.NOMBRE;
+
+            selectCategoria.appendChild(option);
+        });
+
+    } catch (error) {
+        console.error('Error al cargar categorías de compra:', error);
+    }
+}
+
+
+
+// ================================================================================== CARGAR PRECIO UNITARIO DEL PRODUCTO SELECCIONADO =================================================================
+async function cargarPrecioProductoCompra() {
+    // 🔹 Obtener el select del producto
+    const selectProducto = document.getElementById('compra-producto-select');
+
+    // 🔹 Obtener el input del precio unitario
+    const inputPrecio = document.getElementById('compra-item-precio');
+
+    // 🔹 Si no existen, salir
+    if (!selectProducto || !inputPrecio) return;
+
+    // 🔹 Obtener el ID del producto seleccionado
+    const idProducto = selectProducto.value;
+
+    // 🔹 Si no hay producto seleccionado, limpiar precio y salir
+    if (!idProducto) {
+        inputPrecio.value = '';
+        return;
+    }
+
+    try {
+        // 🔹 Pedir productos al backend
+        const response = await fetch('/api/productos');
+        const data = await response.json();
+
+        // 🔹 Validar respuesta
+        if (!response.ok || !data.ok) {
+            throw new Error(data.mensaje || 'No se pudieron cargar los productos');
+        }
+
+        // 🔹 Obtener arreglo de productos
+        const productos = data.productos || [];
+
+        // 🔹 Buscar el producto seleccionado por ID
+        const productoSeleccionado = productos.find(producto =>
+            String(producto.ID) === String(idProducto)
+        );
+
+        // 🔹 Si se encontró, poner su precio en el input
+        if (productoSeleccionado) {
+            inputPrecio.value = parseFloat(productoSeleccionado.PRECIO || 0).toFixed(2);
+        } else {
+            inputPrecio.value = '';
+        }
+
+    } catch (error) {
+        console.error('Error al cargar precio del producto:', error);
+        inputPrecio.value = '';
+    }
+}
+
 
 
 
