@@ -2364,86 +2364,141 @@ if (!emailDestino) {
 
 
 // ==================================================================================================== DASHBOARD & MÉTRICAS =============================================================
-function cargarDashboard() {
-    const pedidos = JSON.parse(localStorage.getItem('pedidos')) || [];
-    const productos = JSON.parse(localStorage.getItem('productos')) || [];
-    const clientes = JSON.parse(localStorage.getItem('clientes')) || [];
-
-    // 1. Calcular Totales
-    // Sumar solo pedidos no cancelados
-    const totalIngresos = pedidos
-        .filter(p => p.estado !== 'cancelado')
-        .reduce((sum, p) => sum + (p.total || 0), 0);
-    
-    const totalPedidos = pedidos.length;
-    const totalProductos = productos.length;
-    const totalClientes = clientes.length;
-
-    // 2. Actualizar Tarjetas (Cards)
+// ================================================================================== CARGAR DASHBOARD =================================================================
+// ================================================================================== CARGAR DASHBOARD =================================================================
+async function cargarDashboard() {
+    // 🔹 Referencias de las cards
     const elIngresos = document.getElementById('dash-total-ingresos');
     const elPedidos = document.getElementById('dash-total-pedidos');
     const elProductos = document.getElementById('dash-total-productos');
     const elClientes = document.getElementById('dash-total-clientes');
 
-    if (elIngresos) elIngresos.textContent = `$${totalIngresos.toFixed(2)}`;
-    if (elPedidos) elPedidos.textContent = totalPedidos;
-    if (elProductos) elProductos.textContent = totalProductos;
-    if (elClientes) elClientes.textContent = totalClientes;
+    try {
+        // 🔹 Pedir pedidos al backend
+        const responsePedidos = await fetch('/api/pedidos');
+        const dataPedidos = await responsePedidos.json();
 
-    
-// 3. Tabla de Productos con Bajo Stock
-cargarAlertaStockBajoDashboard();
+        // 🔹 Preparar arreglo de pedidos según la estructura del backend
+        let pedidos = [];
 
-    // 4. Gráfico simple de ventas (últimos 7 días)
-    renderizarGraficoVentas(pedidos);
-}
+        if (Array.isArray(dataPedidos)) {
+            pedidos = dataPedidos;
+        } else if (dataPedidos.ok && Array.isArray(dataPedidos.pedidos)) {
+            pedidos = dataPedidos.pedidos;
+        }
 
-function renderizarGraficoVentas(pedidos) {
-    const container = document.getElementById('grafico-ventas-container');
-    if (!container) return;
+        // 🔹 Obtener todas las fechas válidas desde SQL
+        const fechasPedidos = pedidos
+            .map(pedido => obtenerClaveFechaSQL(pedido.FECHA || pedido.fecha))
+            .filter(Boolean)
+            .sort();
 
-    // Agrupar ventas por fecha (últimos 7 días)
-    const ventasPorDia = {};
-    const hoy = new Date();
-    const dias = [];
+        // 🔹 Si no hay pedidos válidos, dejar en 0
+        let clavesUltimos7Dias = [];
 
-    for (let i = 6; i >= 0; i--) {
-        const d = new Date();
-        d.setDate(hoy.getDate() - i);
-        const key = d.toISOString().split('T')[0]; // YYYY-MM-DD
-        const label = d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
-        ventasPorDia[key] = 0;
-        dias.push({ key, label });
-    }
+        if (fechasPedidos.length > 0) {
+            // 🔹 Tomar como base la fecha más reciente en la BD
+            const ultimaFecha = fechasPedidos[fechasPedidos.length - 1];
+            const [anio, mes, dia] = ultimaFecha.split('-').map(Number);
+            const fechaBase = new Date(anio, mes - 1, dia);
 
-    pedidos.forEach(p => {
-        if (p.estado !== 'cancelado') {
-            const fechaP = new Date(p.fecha).toISOString().split('T')[0];
-            if (ventasPorDia[fechaP] !== undefined) {
-                ventasPorDia[fechaP] += (p.total || 0);
+            // 🔹 Generar las 7 claves exactas que usa la gráfica
+            for (let i = 6; i >= 0; i--) {
+                const fecha = new Date(
+                    fechaBase.getFullYear(),
+                    fechaBase.getMonth(),
+                    fechaBase.getDate() - i
+                );
+
+                const key = fecha.getFullYear() + '-' +
+                    String(fecha.getMonth() + 1).padStart(2, '0') + '-' +
+                    String(fecha.getDate()).padStart(2, '0');
+
+                clavesUltimos7Dias.push(key);
             }
         }
-    });
 
-    const maxVenta = Math.max(...Object.values(ventasPorDia), 100); // Mínimo 100 para escala
+        // 🔹 Filtrar pedidos de esos mismos 7 días e ignorar cancelados
+        const pedidosUltimos7Dias = pedidos.filter(pedido => {
+            const estado = (pedido.ESTADO || pedido.estado || '').toLowerCase();
+            if (estado === 'cancelado') return false;
 
-    let html = '<div class="chart-bars">';
-    dias.forEach(dia => {
-        const total = ventasPorDia[dia.key];
-        const altura = Math.max((total / maxVenta) * 100, 2); // Mínimo 2% altura
-        html += `
-            <div class="chart-bar-group">
-                <div class="chart-bar" style="height: ${altura}%" title="$${total.toFixed(2)}"></div>
-                <div class="chart-label">${dia.label}</div>
-            </div>
-        `;
-    });
-    html += '</div>';
-    container.innerHTML = html;
+            const key = obtenerClaveFechaSQL(pedido.FECHA || pedido.fecha);
+            if (!key) return false;
+
+            return clavesUltimos7Dias.includes(key);
+        });
+
+        // 🔹 Calcular ingresos de los mismos 7 días de la gráfica
+        const totalIngresos7Dias = pedidosUltimos7Dias.reduce((sum, pedido) => {
+            return sum + parseFloat(pedido.TOTAL || pedido.total || 0);
+        }, 0);
+
+        // 🔹 Total de pedidos de esos mismos 7 días
+        const totalPedidos7Dias = pedidosUltimos7Dias.length;
+
+        // 🔹 Actualizar cards
+        if (elIngresos) elIngresos.textContent = `₡${totalIngresos7Dias.toFixed(2)}`;
+        if (elPedidos) elPedidos.textContent = totalPedidos7Dias;
+
+    } catch (error) {
+        console.error('Error al cargar pedidos en dashboard:', error);
+
+        if (elIngresos) elIngresos.textContent = '₡0.00';
+        if (elPedidos) elPedidos.textContent = '0';
+    }
+
+    try {
+        // 🔹 Pedir productos al backend
+        const responseProductos = await fetch('/api/productos');
+        const dataProductos = await responseProductos.json();
+
+        let productos = [];
+
+        if (Array.isArray(dataProductos)) {
+            productos = dataProductos;
+        } else if (dataProductos.ok && Array.isArray(dataProductos.productos)) {
+            productos = dataProductos.productos;
+        }
+
+        // 🔹 Actualizar total de productos
+        if (elProductos) elProductos.textContent = productos.length;
+
+    } catch (error) {
+        console.error('Error al cargar productos en dashboard:', error);
+        if (elProductos) elProductos.textContent = '0';
+    }
+
+    try {
+        // 🔹 Pedir clientes al backend
+        const responseClientes = await fetch('/api/clientes');
+        const dataClientes = await responseClientes.json();
+
+        let clientes = [];
+
+        if (Array.isArray(dataClientes)) {
+            clientes = dataClientes;
+        } else if (dataClientes.ok && Array.isArray(dataClientes.clientes)) {
+            clientes = dataClientes.clientes;
+        }
+
+        // 🔹 Actualizar total de clientes
+        if (elClientes) elClientes.textContent = clientes.length;
+
+    } catch (error) {
+        console.error('Error al cargar clientes en dashboard:', error);
+        if (elClientes) elClientes.textContent = '0';
+    }
+
+    // 🔹 Cargar tabla de stock bajo
+    cargarAlertaStockBajoDashboard();
+
+    // 🔹 Cargar gráfico de ventas
+    cargarGraficoVentasDashboard();
 }
 
 
-// ================================================================================== CARGAR ALERTA DE STOCK BAJO EN DASHBOARD =================================================================
+// ---------------------------------------------------------------------- CARGAR ALERTA DE STOCK BAJO EN DASHBOARD --------------------------------------------------
 async function cargarAlertaStockBajoDashboard() {
     // 🔹 Obtener tbody donde se van a pintar los productos con bajo stock
     const tbodyBajoStock = document.getElementById('tbody-dash-bajo-stock');
@@ -2510,6 +2565,141 @@ async function cargarAlertaStockBajoDashboard() {
         tbodyBajoStock.appendChild(row);
     }
 }
+
+
+
+// ================================================================================== CARGAR GRÁFICO DE VENTAS ÚLTIMOS 7 DÍAS DESDE BD =================================================================
+async function cargarGraficoVentasDashboard() {
+    // 🔹 Obtener contenedor del gráfico
+    const container = document.getElementById('grafico-ventas-container');
+
+    // 🔹 Si no existe, salir
+    if (!container) return;
+
+    // 🔹 Limpiar contenido
+    container.innerHTML = '';
+
+    try {
+        // 🔹 Pedir pedidos al backend
+        const response = await fetch('/api/pedidos');
+        const data = await response.json();
+
+        // 🔹 Preparar arreglo según la estructura del backend
+        let pedidos = [];
+
+        if (Array.isArray(data)) {
+            pedidos = data;
+        } else if (data.ok && Array.isArray(data.pedidos)) {
+            pedidos = data.pedidos;
+        }
+
+        // 🔹 Obtener todas las claves de fecha reales desde SQL
+        const fechasPedidos = pedidos
+            .map(pedido => obtenerClaveFechaSQL(pedido.FECHA || pedido.fecha))
+            .filter(Boolean)
+            .sort();
+
+        // 🔹 Si no hay pedidos con fecha válida, mostrar gráfico vacío de últimos 7 días desde hoy
+        let fechaBase;
+        if (fechasPedidos.length > 0) {
+            // 🔹 Usar como referencia la fecha más reciente que venga de SQL
+            const ultimaFecha = fechasPedidos[fechasPedidos.length - 1];
+            const [anio, mes, dia] = ultimaFecha.split('-').map(Number);
+            fechaBase = new Date(anio, mes - 1, dia);
+        } else {
+            fechaBase = new Date();
+        }
+
+        // 🔹 Estructura para guardar ventas por día
+        const ventasPorDia = {};
+        const dias = [];
+
+        // 🔹 Generar 7 días tomando como última barra la fecha más reciente de SQL
+        for (let i = 6; i >= 0; i--) {
+            const fecha = new Date(
+                fechaBase.getFullYear(),
+                fechaBase.getMonth(),
+                fechaBase.getDate() - i
+            );
+
+            const key = fecha.getFullYear() + '-' +
+                String(fecha.getMonth() + 1).padStart(2, '0') + '-' +
+                String(fecha.getDate()).padStart(2, '0');
+
+            const label = fecha.toLocaleDateString('es-CR', {
+                day: 'numeric',
+                month: 'numeric'
+            });
+
+            ventasPorDia[key] = 0;
+            dias.push({ key, label });
+        }
+
+        // 🔹 Sumar pedidos por fecha exacta de SQL
+        pedidos.forEach(pedido => {
+            const estado = (pedido.ESTADO || pedido.estado || '').toLowerCase();
+            if (estado === 'cancelado') return;
+
+            const key = obtenerClaveFechaSQL(pedido.FECHA || pedido.fecha);
+            if (!key) return;
+
+            if (ventasPorDia[key] !== undefined) {
+                ventasPorDia[key] += parseFloat(pedido.TOTAL || pedido.total || 0);
+            }
+        });
+
+        // 🔹 Calcular máximo para escalar
+        const maxVenta = Math.max(...Object.values(ventasPorDia), 100);
+
+        // 🔹 Construir HTML
+        let html = '<div class="chart-bars">';
+
+        dias.forEach(dia => {
+            const total = ventasPorDia[dia.key];
+            const altura = Math.max((total / maxVenta) * 100, 2);
+
+            html += `
+                <div class="chart-bar-group">
+                    <div 
+                        class="chart-bar" 
+                        style="height: ${altura}%"
+                        title="₡${total.toFixed(2)}">
+                    </div>
+                    <div class="chart-label">${dia.label}</div>
+                </div>
+            `;
+        });
+
+        html += '</div>';
+
+        // 🔹 Pintar gráfico
+        container.innerHTML = html;
+
+    } catch (error) {
+        console.error('Error al cargar gráfico de ventas:', error);
+        container.innerHTML = '<p>Error al cargar gráfico de ventas.</p>';
+    }
+}
+
+// ================================================================================== OBTENER CLAVE DE FECHA DESDE SQL/BACKEND SIN CORRER DÍAS =================================================================
+function obtenerClaveFechaSQL(fechaValor) {
+    // 🔹 Validar que exista
+    if (!fechaValor) return null;
+
+    // 🔹 Convertir a texto
+    const texto = String(fechaValor).trim();
+
+    // 🔹 Si viene como YYYY-MM-DD o YYYY-MM-DDTHH:mm:ss..., tomar solo la fecha
+    const soloFecha = texto.split('T')[0].split(' ')[0];
+
+    // 🔹 Validar formato básico YYYY-MM-DD
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(soloFecha)) return null;
+
+    return soloFecha;
+}
+
+
+
 
 
 // ========================================================================================================= EQUIPO (EMPLEADOS) ===========================================================
