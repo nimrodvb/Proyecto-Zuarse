@@ -22,10 +22,25 @@ async function registrarUsuario(e) {
         return;
     }
 
-    if (password.length < 6) {
-        mostrarError('La contraseña debe tener al menos 6 caracteres');
-        return;
-    }
+ if (password.length < 8) {
+    mostrarError('Debe tener al menos 8 caracteres');
+    return;
+}
+
+if (!/[A-Z]/.test(password)) {
+    mostrarError('Debe tener al menos una letra mayúscula');
+    return;
+}
+
+if (!/\d/.test(password)) {
+    mostrarError('Debe tener al menos un número');
+    return;
+}
+
+if (!/[@$!%*?&.#_-]/.test(password)) {
+    mostrarError('Debe tener al menos un carácter especial');
+    return;
+}
 
     if (password !== confirmarPassword) {
         mostrarError('Las contraseñas no coinciden');
@@ -116,4 +131,12 @@ function mostrarMensajeExito() {
     setTimeout(() => {
         window.location.href = 'login.html';
     }, 2000);
+}
+
+
+
+
+function validarPassword(password) {
+    const regex = /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&.#_-]).{8,}$/;
+    return regex.test(password);
 }
