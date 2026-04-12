@@ -11,10 +11,25 @@ document.getElementById("form-cambiar-password").addEventListener("submit", asyn
     const nueva = document.getElementById("nueva-password").value;
     const confirmar = document.getElementById("confirmar-password").value;
 
-    if (nueva.length < 6) {
-        alert("Mínimo 6 caracteres");
-        return;
-    }
+   if (nueva.length < 8) {
+    alert("La contraseña debe tener al menos 8 caracteres");
+    return;
+}
+
+if (!/[A-Z]/.test(nueva)) {
+    alert("La contraseña debe tener al menos una mayúscula");
+    return;
+}
+
+if (!/\d/.test(nueva)) {
+    alert("La contraseña debe tener al menos un número");
+    return;
+}
+
+if (!/[@$!%*?&.#_-]/.test(nueva)) {
+    alert("La contraseña debe tener al menos un carácter especial");
+    return;
+}
 
     if (nueva !== confirmar) {
         alert("Las contraseñas no coinciden");
@@ -61,3 +76,9 @@ document.getElementById("form-cambiar-password").addEventListener("submit", asyn
         alert("Error en servidor");
     }
 });
+
+
+function validarPassword(password) {
+    const regex = /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&.#_-]).{8,}$/;
+    return regex.test(password);
+}
