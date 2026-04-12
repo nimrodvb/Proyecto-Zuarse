@@ -289,6 +289,7 @@ async function guardarProducto(e) {
         ocultarFormProducto();
         cargarProductos();
         cargarInventario();
+        cargarDashboard()
 
         alert(esEdicion ? 'Producto actualizado correctamente' : 'Producto guardado correctamente');
 
@@ -1570,6 +1571,9 @@ async function guardarCompra(e) {
         // 🔹 Recargar lista
         cargarCompras();
 
+        // 🔹 Recargar Dashboard
+        cargarDashboard()
+
         // 🔹 Recargar inventario para ver el stock actualizado
         try { cargarInventario(); } catch (e) { console.error('cargarInventario:', e); }
 
@@ -2386,24 +2390,9 @@ function cargarDashboard() {
     if (elProductos) elProductos.textContent = totalProductos;
     if (elClientes) elClientes.textContent = totalClientes;
 
-    // 3. Tabla de Productos con Bajo Stock (Top 5)
-    const tbodyBajoStock = document.getElementById('tbody-dash-bajo-stock');
-    if (tbodyBajoStock) {
-        tbodyBajoStock.innerHTML = '';
-        const bajoStock = productos
-            .sort((a, b) => (a.stock || 0) - (b.stock || 0))
-            .slice(0, 5);
-        
-        bajoStock.forEach(p => {
-            const row = document.createElement('tr');
-            const stockClass = p.stock === 0 ? 'stock-agotado' : (p.stock <= 10 ? 'stock-bajo' : '');
-            row.innerHTML = `
-                <td>${escapeHtml(p.nombre)}</td>
-                <td><span class="stock-badge ${stockClass}">${p.stock}</span></td>
-            `;
-            tbodyBajoStock.appendChild(row);
-        });
-    }
+    
+// 3. Tabla de Productos con Bajo Stock
+cargarAlertaStockBajoDashboard();
 
     // 4. Gráfico simple de ventas (últimos 7 días)
     renderizarGraficoVentas(pedidos);
@@ -2452,6 +2441,76 @@ function renderizarGraficoVentas(pedidos) {
     html += '</div>';
     container.innerHTML = html;
 }
+
+
+// ================================================================================== CARGAR ALERTA DE STOCK BAJO EN DASHBOARD =================================================================
+async function cargarAlertaStockBajoDashboard() {
+    // 🔹 Obtener tbody donde se van a pintar los productos con bajo stock
+    const tbodyBajoStock = document.getElementById('tbody-dash-bajo-stock');
+
+    // 🔹 Si no existe, salir
+    if (!tbodyBajoStock) return;
+
+    // 🔹 Limpiar contenido actual
+    tbodyBajoStock.innerHTML = '';
+
+    try {
+        // 🔹 Pedir productos al backend
+        const response = await fetch('/api/productos');
+        const data = await response.json();
+
+        // 🔹 Validar respuesta
+        if (!response.ok || !data.ok) {
+            throw new Error(data.mensaje || 'No se pudieron cargar los productos para el dashboard');
+        }
+
+        // 🔹 Obtener arreglo de productos
+        const productos = data.productos || [];
+
+        // 🔹 Filtrar solo productos con stock menor o igual a 20
+        const productosBajoStock = productos
+            .filter(p => parseInt(p.STOCK || 0) <= 20)
+            .sort((a, b) => parseInt(a.STOCK || 0) - parseInt(b.STOCK || 0));
+
+        // 🔹 Si no hay productos con stock bajo, mostrar mensaje
+        if (productosBajoStock.length === 0) {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td colspan="2">No hay productos con stock bajo.</td>
+            `;
+            tbodyBajoStock.appendChild(row);
+            return;
+        }
+
+        // 🔹 Recorrer productos con stock bajo y agregarlos a la tabla
+        productosBajoStock.forEach(producto => {
+            const row = document.createElement('tr');
+
+            // 🔹 Determinar clase visual según stock
+            const stock = parseInt(producto.STOCK || 0);
+            const stockClass = stock === 0
+                ? 'stock-agotado'
+                : (stock <= 10 ? 'stock-bajo' : 'stock-medio');
+
+            row.innerHTML = `
+                <td>${escapeHtml(producto.NOMBRE || '')}</td>
+                <td><span class="stock-badge ${stockClass}">${stock}</span></td>
+            `;
+
+            tbodyBajoStock.appendChild(row);
+        });
+
+    } catch (error) {
+        console.error('Error al cargar alerta de stock bajo:', error);
+
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td colspan="2">Error al cargar stock bajo.</td>
+        `;
+        tbodyBajoStock.appendChild(row);
+    }
+}
+
 
 // ========================================================================================================= EQUIPO (EMPLEADOS) ===========================================================
 
