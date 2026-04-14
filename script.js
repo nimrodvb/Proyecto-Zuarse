@@ -114,12 +114,14 @@ function verificarSesion() {
     if (!sesion) {
         sesion = JSON.parse(sessionStorage.getItem('sesion_zuarse'));
     }
+
     const menuAdmin = document.getElementById('menu-admin');
     const btnUsuario = document.getElementById('btn-usuario');
     const btnLoginVisible = document.getElementById('btn-login-visible');
     const adminBadge = document.getElementById('admin-badge');
     const usuarioNombre = document.getElementById('usuario-nombre');
     const menuAdminItem = document.getElementById('menu-admin-item');
+    const menuClienteItem = document.getElementById('menu-cliente-item');
     const btnComprar = document.getElementById('comprar-carrito');
     
     if (sesion && sesion.logueado) {
@@ -152,6 +154,9 @@ function verificarSesion() {
             if (menuAdminItem) {
                 menuAdminItem.style.display = 'block';
             }
+            if (menuClienteItem) {
+                menuClienteItem.style.display = 'none';
+            }
         } else {
             // Usuario normal
             if (adminBadge) {
@@ -166,6 +171,9 @@ function verificarSesion() {
             if (menuAdminItem) {
                 menuAdminItem.style.display = 'none';
             }
+            if (menuClienteItem) {
+                menuClienteItem.style.display = 'block';
+            }
         }
     } else {
         // No hay sesión
@@ -177,6 +185,9 @@ function verificarSesion() {
         }
         if (menuAdmin) {
             menuAdmin.style.display = 'none';
+        }
+        if (menuClienteItem) {
+            menuClienteItem.style.display = 'none';
         }
         
         // Deshabilitar botón de compra

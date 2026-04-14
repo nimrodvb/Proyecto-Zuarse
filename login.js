@@ -169,6 +169,7 @@ function crearSesion(identificador, rol, recordar, datosExtra = {}) {
     } else {
         sessionStorage.setItem('sesion_zuarse', JSON.stringify(sesion));
     }
+    
 
     // Redirigir según rol
     setTimeout(() => {

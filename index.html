@@ -25,22 +25,41 @@
                     <li id="menu-admin" style="display: none;"><a href="admin.html" style="background: #667eea; color: white; padding: 8px 15px; border-radius: 5px;">Admin</a></li>
                 </ul>
         </nav>
-        <div class="user-menu">
-            <button id="btn-login-visible" class="btn-login-visible" onclick="window.location.href='login.html'">🔐 Iniciar Sesión</button>
-            <div id="btn-usuario" class="btn-user-container" style="display: none;">
-                <button class="btn-user" onclick="toggleMenuUsuario()">
-                    <span id="usuario-nombre">👤 Usuario</span>
-                    <span id="admin-badge" class="admin-badge" style="display: none;">ADMIN</span>
-                </button>
-                <div id="menu-usuario" class="dropdown-menu" style="display: none;">
-                    <div id="menu-admin-item" class="menu-admin-section" style="display: none;">
-                        <a href="admin.html" class="btn-admin-link">⚙️ Panel Administrativo</a>
-                        <hr>
-                    </div>
-                    <a href="#" onclick="cerrarSesionUsuario(); return false;">🚪 Cerrar Sesión</a>
-                </div>
+       
+
+       <div class="user-menu">
+    <button id="btn-login-visible" class="btn-login-visible" onclick="window.location.href='login.html'">
+        🔐 Iniciar Sesión
+    </button>
+
+    <div id="btn-usuario" class="btn-user-container" style="display: none;">
+        <button class="btn-user" onclick="toggleMenuUsuario()">
+            <span id="usuario-nombre">👤 Usuario</span>
+            <span id="admin-badge" class="admin-badge" style="display: none;">ADMIN</span>
+        </button>
+
+        <div id="menu-usuario" class="dropdown-menu" style="display: none;">
+            
+            <!-- SOLO ADMIN -->
+            <div id="menu-admin-item" class="menu-admin-section" style="display: none;">
+                <a href="admin.html" class="btn-admin-link">⚙️ Panel Administrativo</a>
+                <hr>
             </div>
+
+            <!-- SOLO CLIENTE -->
+            <div id="menu-cliente-item" style="display: none;">
+                <a href="cliente.html">👤 Mi perfil</a>
+                <hr>
+            </div>
+
+            <!-- TODOS -->
+            <a href="#" onclick="cerrarSesionUsuario(); return false;">🚪 Cerrar Sesión</a>
+
         </div>
+    </div>
+</div>
+
+
         <div>
             <ul>
                 <li class="submenu">

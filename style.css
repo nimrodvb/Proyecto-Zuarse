@@ -802,3 +802,144 @@ h2 {
     outline: none;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
+
+
+/* =========================
+   PERFIL CLIENTE
+========================= */
+
+.perfil-main {
+    padding: 60px 0;
+}
+
+.perfil-card {
+    background-color: #ffffff;
+    border-radius: 15px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+    padding: 35px;
+    margin-bottom: 60px;
+}
+
+.perfil-titulo {
+    margin-bottom: 25px;
+}
+
+.perfil-titulo h2 {
+    font-size: 32px;
+    color: #13462E;
+    margin-bottom: 10px;
+}
+
+.perfil-titulo p {
+    font-size: 16px;
+    color: #555;
+}
+
+.estado-carga {
+    font-size: 16px;
+    color: #666;
+    margin-bottom: 20px;
+}
+
+.form-perfil {
+    width: 100%;
+}
+
+.perfil-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.campo {
+    display: flex;
+    flex-direction: column;
+}
+
+.campo-completo {
+    grid-column: 1 / -1;
+}
+
+.campo label {
+    font-size: 15px;
+    font-weight: 600;
+    color: #13462E;
+    margin-bottom: 8px;
+}
+
+.campo input {
+    width: 100%;
+    padding: 14px 16px;
+    border: 1px solid #dcdcdc;
+    border-radius: 10px;
+    font-size: 15px;
+    color: #222;
+    background-color: #f9f9f9;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+.campo input:focus {
+    border-color: #9BCE21;
+    background-color: #fff;
+    box-shadow: 0 0 0 3px rgba(155, 206, 33, 0.15);
+}
+
+.acciones-perfil {
+    margin-top: 30px;
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.btn-guardar-perfil,
+.btn-volver-perfil {
+    display: inline-block;
+    padding: 14px 24px;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 700;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: 0.3s ease;
+}
+
+.btn-guardar-perfil {
+    background-color: #9BCE21;
+    color: #fff;
+}
+
+.btn-guardar-perfil:hover {
+    background-color: #83b11b;
+}
+
+.btn-volver-perfil {
+    background-color: #e9e9e9;
+    color: #333;
+}
+
+.btn-volver-perfil:hover {
+    background-color: #d9d9d9;
+}
+
+.mensaje-perfil {
+    margin-top: 20px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #13462E;
+}
+
+@media (max-width: 768px) {
+    .perfil-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .perfil-card {
+        padding: 20px;
+    }
+
+    .perfil-titulo h2 {
+        font-size: 26px;
+    }
+}
