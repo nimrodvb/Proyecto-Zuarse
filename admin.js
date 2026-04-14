@@ -2709,6 +2709,27 @@ function obtenerClaveFechaSQL(fechaValor) {
 
 // ========================================================================================================= EQUIPO (EMPLEADOS) ===========================================================
 
+// ---------------------------------------------------------------------------------------------------------Parametros contraseña------------------------------
+
+function validarPasswordEmpleado(password) {
+    if (password.length < 8) {
+        return 'La contraseña debe tener al menos 8 caracteres';
+    }
+
+    if (!/[A-Z]/.test(password)) {
+        return 'La contraseña debe tener al menos una letra mayúscula';
+    }
+
+    if (!/[0-9]/.test(password)) {
+        return 'La contraseña debe tener al menos un número';
+    }
+
+    if (!/[@$!%*?&.#_\-]/.test(password)) {
+        return 'La contraseña debe tener al menos un carácter especial';
+    }
+
+    return '';
+}
 
 
 // MUESTRA EL FORMULARIO PARA CREAR UN NUEVO EMPLEADO
@@ -2771,11 +2792,21 @@ async function guardarEmpleado(e) {
         return;
     }
 
-    // Si estamos creando uno nuevo, la contraseña sí es obligatoria
-    if (!empleadoEditando && !password) {
-        alert('La contraseña es obligatoria para nuevos empleados');
+   // Si estamos creando uno nuevo, la contraseña sí es obligatoria
+if (!empleadoEditando && !password) {
+    alert('La contraseña es obligatoria para nuevos empleados');
+    return;
+}
+
+// Validar contraseña si se escribió una
+if (password) {
+    const errorPassword = validarPasswordEmpleado(password);
+
+    if (errorPassword) {
+        alert(errorPassword);
         return;
     }
+}
 
     try {
         let respuesta;
