@@ -2151,6 +2151,28 @@ app.delete('/api/compras/:id', async (req, res) => {
 });
 
 
-// =========================================================================================================== CLIENTES PERFIL ==================================================================================
+// =========================================================================================================== CONTACTOS ==================================================================================
 
+app.get("/api/contacto", async (req, res) => {
+  try {
+    const pool = await conectarDB();
 
+    const result = await pool.request().query(`
+      SELECT ID, NOMBRE, APELLIDO, CORREO, TELEFONO
+      FROM CONTACTOS
+      ORDER BY ID DESC
+    `);
+
+    res.json({
+      ok: true,
+      contactos: result.recordset
+    });
+
+  } catch (error) {
+    console.error("Error en GET /api/contacto:", error);
+    res.status(500).json({
+      ok: false,
+      mensaje: "Error al obtener contactos"
+    });
+  }
+});

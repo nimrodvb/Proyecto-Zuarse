@@ -40,6 +40,7 @@ document.addEventListener('DOMContentLoaded', function() {
     try { mostrarResumenNotificaciones(); } catch(e) { console.error('mostrarResumenNotificaciones:', e); }
     try { cargarDashboard(); } catch(e) { console.error('cargarDashboard:', e); }
     try { cargarEquipo(); } catch(e) { console.error('cargarEquipo:', e); }
+    try { cargarContactos(); } catch(e) { console.error('cargarContactos:', e); }
     
 
     const btnX = document.querySelector('.close-modal');
@@ -199,6 +200,10 @@ function cambiarTab(e) {
     // Agregar active al seleccionado
     tabBtn.classList.add('active');
     document.getElementById(tabNombre).classList.add('active');
+
+      if (tabNombre === 'contactos') {
+        cargarContactos();
+    }
 }
 
 // =============================================================================================================== PRODUCTOS ===============================================================================
@@ -2982,3 +2987,48 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
 });
+
+
+
+// ========================================================================================================= CONTACTOS ===========================================================
+
+async function cargarContactos() {
+    try {
+        const respuesta = await fetch('/api/contacto');
+        const data = await respuesta.json();
+
+        const tbody = document.getElementById('tbody-contactos');
+        const sinContactos = document.getElementById('sin-contactos');
+        const tabla = document.getElementById('tabla-contactos');
+
+        if (!tbody || !sinContactos || !tabla) return;
+
+        tbody.innerHTML = '';
+
+        if (!data.ok || !data.contactos || data.contactos.length === 0) {
+            tabla.style.display = 'none';
+            sinContactos.style.display = 'block';
+            return;
+        }
+
+        tabla.style.display = 'table';
+        sinContactos.style.display = 'none';
+
+        data.contactos.forEach(contacto => {
+            const fila = document.createElement('tr');
+
+            fila.innerHTML = `
+                <td>${contacto.ID}</td>
+                <td>${contacto.NOMBRE || ''}</td>
+                <td>${contacto.APELLIDO || ''}</td>
+                <td>${contacto.CORREO || ''}</td>
+                <td>${contacto.TELEFONO || ''}</td>
+            `;
+
+            tbody.appendChild(fila);
+        });
+
+    } catch (error) {
+        console.error('Error al cargar contactos:', error);
+    }
+}

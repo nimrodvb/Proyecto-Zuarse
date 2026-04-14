@@ -30,10 +30,10 @@
                 <p>Admin Panel</p>
             </div>
 
-            <nav class="sidebar-menu">
-                <p class="menu-label">General</p>
+            <p class="menu-label">General</p>
                 <button class="tab-btn active" data-tab="reportes"><i class="fas fa-chart-line"></i> Reportes</button>
                 <button class="tab-btn" data-tab="notificaciones"><i class="fas fa-bell"></i> Notificaciones</button>
+                <button class="tab-btn" data-tab="contactos"><i class="fas fa-envelope"></i> Contactos</button>
                 
                 <p class="menu-label">Ventas</p>
                 <button class="tab-btn" data-tab="pedidos"><i class="fas fa-shopping-cart"></i> Pedidos</button>
@@ -653,6 +653,36 @@
                     <div id="sin-equipo" class="empty-state">No hay empleados adicionales registrados.</div>
                 </div>
             </section>
+
+            <!--------------------------------------------------------------------------- CONTACTOS ----------------------------------------------------------->
+
+            <section id="contactos" class="tab-content">
+    <div class="tab-header">
+        <h2>Solicitudes de Contacto</h2>
+    </div>
+
+    <div class="lista-container">
+        <table id="tabla-contactos">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th>Apellido</th>
+                    <th>Correo</th>
+                    <th>Teléfono</th>
+                </tr>
+            </thead>
+            <tbody id="tbody-contactos">
+                <!-- Se llena dinámicamente -->
+            </tbody>
+        </table>
+
+        <div id="sin-contactos" class="empty-state">
+            No hay solicitudes de contacto registradas.
+        </div>
+    </div>
+</section>
+           
 
 
 
